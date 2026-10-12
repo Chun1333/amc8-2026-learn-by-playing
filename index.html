@@ -72,8 +72,6 @@ header.top .sp{flex:1}
 .choice.right{border-color:var(--green);background:var(--green-l)}
 .choice.wrong{border-color:var(--red);background:var(--red-l)}
 .note{font-size:15px;color:var(--soft);margin-top:8px;min-height:22px;font-weight:700}
-.bigidea{background:var(--purple-l);border-color:#D8CCFB}
-.bigidea p{margin:0;font-size:18px;font-weight:700}
 
 .play{border-color:#BFD7FB;background:#F7FBFF}
 .stage{width:100%;display:block;user-select:none;-webkit-user-select:none;touch-action:manipulation}
@@ -170,8 +168,6 @@ footer{color:var(--soft);font-size:13px;text-align:center;padding:24px 16px 40px
 .badge .bi{font-size:30px}
 .badge .bn{font-weight:900;font-size:14px}
 .badge .bd{font-size:12px;color:var(--soft);font-weight:700}
-.science summary{cursor:pointer;font-weight:900}
-.science li{margin:6px 0;font-size:15px}
 .twin{border-color:#FBCFE8;background:#FFF5FA}
 .twin .fb{font-weight:700;margin-top:8px}
 .bigstars{font-size:34px;color:var(--orange);letter-spacing:4px}
@@ -195,6 +191,44 @@ footer{color:var(--soft);font-size:13px;text-align:center;padding:24px 16px 40px
 .ycard:hover{transform:translateY(-3px)}
 .ycard .yy{font-weight:900;font-size:34px;line-height:1}
 .ycard .ys{font-weight:800;font-size:15px;color:var(--soft)}
+
+.note.good{color:var(--green)}
+.note.bad{color:var(--red)}
+.choice.shake{animation:shake .3s}
+
+/* hints */
+.hintcard{background:#FFFDF7}
+.hints{display:flex;flex-direction:column;gap:10px}
+.hitem{border:2px solid #EEE7DA;border-radius:16px;background:#fff;transition:all .25s}
+.hhead{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:12px 14px;font:inherit;font-weight:900;font-size:18px;background:none;border:0;color:var(--ink);cursor:pointer}
+.hhead .tap{margin-left:auto;font-size:13px;font-weight:800;color:#fff;background:var(--orange);border-radius:99px;padding:2px 10px}
+.hitem.locked{background:#FAFAF9}
+.hitem.locked .hhead{color:var(--gray);cursor:default}
+.hitem.ready{border-color:var(--orange);background:var(--orange-l)}
+.hitem.ready .tap{animation:bob 1.2s ease-in-out infinite}
+.hitem.open{border-color:var(--blue);box-shadow:0 4px 0 var(--blue-l)}
+.hitem.open .hhead{cursor:default}
+.hitem.done{border-color:#A7E8BC;background:#F3FDF6}
+.hitem.done .hhead{cursor:default}
+.hbody{padding:0 16px 14px}
+.hbody > p{margin:0 0 8px;font-size:18px;line-height:1.45}
+.hitem.done .ask .opt:not(.right){display:none}
+.hafter{margin-top:12px;font-weight:900;font-size:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+/* solution movie */
+.solution{position:relative;background:#F8F7FF;border-color:#DDD6FE}
+.btn.big{font-size:19px;padding:12px 22px}
+.solpic.demo{pointer-events:none}
+.sollist{margin:12px 0 0;padding-left:28px}
+.sollist li{margin:8px 0;font-size:17px;line-height:1.45;opacity:.6;transition:opacity .3s}
+.sollist li.now{opacity:1;font-weight:700}
+.sollist li::marker{font-weight:900;color:var(--purple)}
+.solqa{margin-top:3px;font-size:16px;color:var(--soft)}
+.solqa .reveal{color:var(--green);animation:pop .3s}
+.solqa .think{display:inline-block;animation:bob 1s ease-in-out infinite}
+.solend{text-align:center;margin-top:10px}
+.solend .ans{font-size:26px;font-weight:900;color:var(--green);margin:6px 0}
+.finger{position:absolute;font-size:34px;z-index:5;pointer-events:none;transition:left .55s ease,top .55s ease;left:50%;top:60px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.finger.tap{transform:scale(.8)}
 
 </style>
 </head>
@@ -251,6 +285,7 @@ function tween(dur, fn){
 }
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
 const lerp = (a,b,t)=>a+(b-a)*t;
+function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
 function gcd(a,b){ return b?gcd(b,a%b):Math.abs(a); }
 function frac(n,d){ const g=gcd(n,d); return (n/g)+'/'+(d/g); }
 
@@ -336,7 +371,7 @@ function toTeX(src){
   }
   return parse(null);
 }
-const MATH_OK = '.q, .choice, .bigidea, .step, .trap, .finale, .twin, .readout, .hint, .fb, .ask, .modal p';
+const MATH_OK = '.q, .choice, .hbody, .sollist, .solend, .step, .trap, .finale, .twin, .readout, .hint, .fb, .ask, .modal p';
 const RUN_RE = /(?:[\d√½π]|\((?=\d))[\d\s+\-−×÷=.,()π√½…\/?%!<>≤≥]*/g;
 const hasKatex = () => typeof katex !== 'undefined';
 function mathEl(expr){
@@ -1735,7 +1770,7 @@ W[22] = (box, k) => {
     k.say(out, (note||'') + `Smallest M so far: ${best}`, best===9?'ok':null);
   }
   function random(){
-    const a = Array.from({length:25},(_,i)=>i+1).sort(()=>Math.random()-.5);
+    const a = shuffle(Array.from({length:25},(_,i)=>i+1));
     show([0,1,2,3,4].map(i=>a.slice(i*5,i*5+5)));
   }
   function tryM(M){
@@ -2236,7 +2271,11 @@ W[21] = (box, k) => {
 /* ===== year registry ===== */
 const YEARS = {};
 YEARS[2026] = { probs: PROBS, twins: TWINS, widgets: W };
-const yearList = () => Object.keys(YEARS).map(Number).sort((a,b)=>b-a);
+const yearList = () => Object.keys(YEARS).filter(y=>(YEARS[y].probs||[]).length).map(Number).sort((a,b)=>b-a);
+/* hints: 4 per problem, in order (never labelled for kids):
+   1 content knowledge · 2 toolkit · 3 insight · 4 execution */
+const HQ = (t, q, o, a, yes, no) => ({t, ask: q ? {q, o, a, yes, no} : null});
+function addHints(y, map){ for (const n in map){ const p = YEARS[y] && (YEARS[y].probs||[])[n-1]; if (p) p.hints = map[n]; } }
 
 /* 2025 AMC 8 — re-told for kids. Content drafted by ChatGPT Work, verified & edited by Claude. */
 const T = (q, o, a, hint, why) => ({q, o, a, hint, why});
@@ -2875,7 +2914,7 @@ W25[16] = (box, k) => {
   }
   S('text',{x:360,y:225,'text-anchor':'middle','font-size':15,fill:'#6B6385',text:'Each column: pick top OR bottom (they differ by 10)'},svg);
   const r = k.row();
-  k.btn(r,'🎲 Random fair pick', ()=>{ const idx=[...Array(10).keys()].sort(()=>Math.random()-.5); idx.forEach((c,j)=>pick[c]= j<5?'t':'b'); draw(); },'alt');
+  k.btn(r,'🎲 Random fair pick', ()=>{ const idx=shuffle([...Array(10).keys()]); idx.forEach((c,j)=>pick[c]= j<5?'t':'b'); draw(); },'alt');
   const out = k.readout(r,'');
   function draw(){
     els.forEach(({rt,rb},i)=>{ setA(rt,{fill: pick[i]==='t'?'#DBEAFE':'#fff'}); setA(rb,{fill: pick[i]==='b'?'#FEF3C7':'#fff'}); });
@@ -3196,7 +3235,7 @@ W25[25] = (box, k) => {
   const tb = S('text',{x:530,y:368,'text-anchor':'middle','font-size':18,fill:'#F59E0B'},svg);
   let path = 'RRUURURUUR';
   const r = k.row();
-  k.btn(r,'🎲 New path', ()=>{ const s=[...'RRRRRUUUUU'].sort(()=>Math.random()-.5).join(''); path=s; draw(); },'g');
+  k.btn(r,'🎲 New path', ()=>{ const s=shuffle([...'RRRRRUUUUU']).join(''); path=s; draw(); },'g');
   const out = k.readout(k.row(),'');
   function drawOne(g, p, col, fillc){
     g.innerHTML = '';
@@ -3362,6 +3401,2398 @@ W25[21] = (box, k) => {
   return { step(i){ if(i===2){ for (const x in val) delete val[x]; val.C=7; val.F=1; draw(); } } };
 };
 
+/* 2024 AMC 8 — re-told for kids. Content drafted by ChatGPT Work, verified & edited by Claude. */
+const P24 = [
+{ n:1, icon:'🔍', title:'Last Digit Detective', topic:'Place value',
+  q:`What is the ones digit of [[222,222 − 22,222 − 2,222 − 222 − 22 − 2]]?`,
+  choices:['0','2','4','8','10'], ans:1,
+  big:`Only the ones digits decide the last digit.`,
+  steps:[
+    {t:`Tap each number to take it away.`, ask:A('Which digit matters?',['hundreds','ones','thousands'],1)},
+    {t:`We take away five 2s from the ones.`, ask:A('How much is that?',['8','12','10'],2)},
+    {t:`2 − 10 wraps around to 2 again.`, ask:A('Ones digit?',['2','8','0'],0)}
+  ],
+  trap:`Saying 8 because 2 − 10 = −8.`,
+  twin:T(`What is the ones digit of [[7,777 − 777 − 77 − 7]]?`,['2','4','6','8'],2,'Follow only the ones digits.','7,777 − 861 = 6,916 → 6.') },
+
+{ n:2, icon:'💰', title:'Decimal Treasure', topic:'Decimals',
+  q:`Write [[44/11 + 110/44 + 44/1100]] as a decimal.`,
+  choices:['6.4','6.504','6.54','6.9','6.94'], ans:2,
+  big:`A fraction means top ÷ bottom.`,
+  steps:[
+    {t:`44 ÷ 11 makes 4 groups.`, ask:A('44/11 = ?',['4','0.4','40'],0)},
+    {t:`110/44 = 5/2.`, ask:A('5 halves = ?',['0.25','2.5','5.2'],1)},
+    {t:`44/1100 = 4/100.`, ask:A('4 hundredths = ?',['0.4','0.004','0.04'],2)},
+    {t:`Add them up.`, ask:A('4 + 2.5 + 0.04 = ?',['6.54','6.504','6.9'],0)}
+  ],
+  trap:`Mixing up tenths and hundredths.`,
+  twin:T(`Write [[18/6 + 15/6 + 6/100]] as a decimal.`,['5.56','5.506','5.6','6.56'],0,'Convert each fraction first.','3 + 2.5 + 0.06 = 5.56.') },
+
+{ n:3, icon:'🟪', title:'Square Layer Cake', topic:'Area',
+  q:`Squares with sides 4, 7, 9, 10 share a corner. Colours go white, gray, white, gray from the smallest. How much gray can you see?`,
+  choices:['42','45','49','50','52'], ans:4,
+  big:`A layer you see = its square minus the square on top.`,
+  steps:[
+    {t:`Outer gray ring: 10² − 9².`, ask:A('= ?',['10','19','81'],1)},
+    {t:`Inner gray ring: 7² − 4².`, ask:A('= ?',['3','21','33'],2)},
+    {t:`Add both gray rings.`, ask:A('19 + 33 = ?',['52','49','50'],0)}
+  ],
+  trap:`Subtracting side lengths, not areas.`,
+  twin:T(`Nested squares with sides 2, 4, 5, 6 share a corner; colours go white, blue, white, blue from the smallest. Visible blue area?`,['19','21','25','23'],3,'Each blue square minus the one on top.','36 − 25 + 16 − 4 = 23.') },
+
+{ n:4, icon:'🧽', title:'Missing Number', topic:'Squares',
+  q:`Yunji adds 1 to 9 but leaves one number out. Her total is a perfect square. Which number did she leave out?`,
+  choices:['5','6','7','8','9'], ans:4,
+  big:`Find the full total first.`,
+  steps:[
+    {t:`1 + 2 + … + 9.`, ask:A('Total?',['36','40','45'],2)},
+    {t:`Leaving one out gives 36 to 44.`, ask:A('Square in that range?',['36','25','49'],0)},
+    {t:`45 − 36.`, ask:A('Left out?',['8','9','7'],1)}
+  ],
+  trap:`Picking a square that can't happen.`,
+  twin:T(`Add 1 to 7 but leave one number out. The total is a perfect square. Which was left out?`,['1','3','5','7'],1,'Full total, then nearby squares.','28 − 3 = 25.') },
+
+{ n:5, icon:'🎲', title:'Dice Products', topic:'Divisibility',
+  q:`Two dice are rolled. Their product is a multiple of 6. Which sum is impossible?`,
+  choices:['5','6','7','8','9'], ans:1,
+  big:`A multiple of 6 needs a 2 and a 3 inside.`,
+  steps:[
+    {t:`The dice must give a 2 and a 3.`, ask:A('Multiple of 6?',['8','9','12'],2)},
+    {t:`Sum 6: 1+5, 2+4, 3+3.`, ask:A('2 × 4 = ?',['8','6','12'],0)},
+    {t:`Products 5, 8, 9 — none work.`, ask:A('Can sum 6 work?',['yes','no','doubles only'],1)},
+    {t:`Others work: 2+3, 1+6, 2+6, 3+6.`, ask:A('Impossible sum?',['5','9','6'],2)}
+  ],
+  trap:`Checking the sum instead of the product.`,
+  twin:T(`Two dice have a product that is a multiple of 4. Which sum is impossible: 3, 4, 5 or 6?`,['4','5','3','6'],2,'List the dice for each sum.','Sum 3 is 1 + 2; product 2 is not a multiple of 4.') },
+
+{ n:6, icon:'⛸️', title:'Skating Shortcuts', topic:'Length',
+  q:`Four skating paths P, Q, R, S on the same rink. Put them in order, shortest to longest.`,
+  choices:['P, Q, R, S','P, R, S, Q','Q, S, P, R','R, P, S, Q','R, S, P, Q'], ans:3,
+  big:`A straight line is the shortest way between two points.`,
+  steps:[
+    {t:`R cuts the curvy ends with straight chords.`, ask:A('Shortest?',['R','P','S'],0)},
+    {t:`P and S share the round ends; S's middle is longer.`, ask:A('Shorter: P or S?',['S','P','equal'],1)},
+    {t:`Q zigzags the most.`, ask:A('Longest?',['P','S','Q'],2)},
+    {t:`Order: R, P, S, Q.`, ask:A('Second?',['P','R','S'],0)}
+  ],
+  trap:`Judging by how busy a path looks.`,
+  twin:T(`A pond is 4 across. One route goes round half the edge, one goes straight across. How much longer is the curved route?`,['4','2π','4π − 4','2π − 4'],3,'Half the circle vs the diameter.','Half circle = 2π; minus 4.') },
+
+{ n:7, icon:'🧩', title:'Tiny Tile Trouble', topic:'Tiling',
+  q:`Cover a 3 × 7 rectangle with 2 × 2, 1 × 4 and 1 × 1 tiles. Fewest 1 × 1 tiles?`,
+  choices:['1','2','3','4','5'], ans:4,
+  big:`Each row of 7 is odd, big tiles cover an even amount.`,
+  steps:[
+    {t:`21 squares; big tiles cover 4 each.`, ask:A('Possible small counts?',['1 or 5','2 or 4','3 or 4'],0)},
+    {t:`A 4-tall bar can't stand in 3 rows.`, ask:A('Stand it up?',['yes','no','at an edge'],1)},
+    {t:`Big tiles cover 2 or 4 squares per row.`, ask:A('Always even?',['no','sometimes','yes'],2)},
+    {t:`So each row of 7 needs a small tile.`, ask:A('1 small tile for 3 rows?',['no','yes','if centred'],0)},
+    {t:`1 won't work; 5 does.`, ask:A('Fewest?',['3','5','7'],1)}
+  ],
+  trap:`Using area alone and saying 1.`,
+  twin:T(`Cover a 3 × 5 rectangle with 2 × 2, 1 × 4 and 1 × 1 tiles. Fewest 1 × 1 tiles?`,['1','3','5','7'],1,'Each odd row needs a small tile.','3 rows → at least 3, and 3 works.') },
+
+{ n:8, icon:'🌳', title:'Money Tree', topic:'Counting',
+  q:`Taye has $2 on Monday. Each day he adds $3 or doubles his money. How many different amounts can he have on Thursday?`,
+  choices:['3','4','5','6','7'], ans:3,
+  big:`Different paths can reach the same amount.`,
+  steps:[
+    {t:`Tuesday: $4 or $5.`, ask:A('Tuesday amounts?',['1','3','2'],2)},
+    {t:`Wednesday: 7, 8, 10 (8 twice).`, ask:A('Different?',['3','4','2'],0)},
+    {t:`Thursday: 10, 11, 13, 14, 16, 20.`, ask:A('How many?',['8','6','5'],1)}
+  ],
+  trap:`Counting repeats twice.`,
+  twin:T(`Start with 1 token. Twice, either add 2 tokens or double. How many different final amounts?`,['2','4','3','5'],2,'Merge paths that meet.','After 1 step: 2 or 3; finals 4, 5, 6.') },
+
+{ n:9, icon:'🔴', title:'Marble Packs', topic:'Ratios',
+  q:`Maria has red, green and blue marbles: half as many red as green, twice as many blue as green. Which total is possible?`,
+  choices:['24','25','26','27','28'], ans:4,
+  big:`A fixed ratio makes equal packs.`,
+  steps:[
+    {t:`1 red part ↔ 2 green parts.`, ask:A('Green parts?',['2','1','4'],0)},
+    {t:`Blue is twice green.`, ask:A('Blue parts?',['2','4','3'],1)},
+    {t:`1 + 2 + 4 = 7 per pack.`, ask:A('Whole packs?',['25','27','28'],2)}
+  ],
+  trap:`Comparing blue with red directly.`,
+  twin:T(`Half as many red as green, three times as many blue as green. Which total is possible?`,['18','20','22','24'],0,'Start with 1 red part.','1 : 2 : 6 = 9 parts; 18 = 2 × 9.') },
+
+{ n:10, icon:'🌍', title:'Carbon Time Machine', topic:'Growth',
+  q:`CO₂ was [[338 ppm]] in January 1980 and rises about [[1.515 ppm]] each year. Predict January 2030 (nearest whole number).`,
+  choices:['399','414','420','444','459'], ans:1,
+  big:`Same rise added once per year.`,
+  steps:[
+    {t:`1980 to 2030.`, ask:A('Years?',['49','50','51'],1)},
+    {t:`50 × 1.515 = 75.75.`, ask:A('Closest?',['50','100','76'],2)},
+    {t:`338 + 75.75 = 413.75.`, ask:A('Rounded?',['414','413','420'],0)}
+  ],
+  trap:`Counting 51 years.`,
+  twin:T(`A reading is [[200 ppm]] in 2020 and rises [[1.26 ppm]] each year. Predict 2030 (nearest whole number).`,['212','213','214','226'],1,'Count the years, then round.','10 × 1.26 = 12.6 → 212.6 → 213.') },
+
+{ n:11, icon:'🔺', title:'Triangle Height Hunt', topic:'Area',
+  q:`Triangle A(5,7), B(11,7), C(3,y) with y above 7 has area 12. Find y.`,
+  choices:['8','9','10','11','12'], ans:3,
+  big:`Triangle = half of a rectangle.`,
+  steps:[
+    {t:`Base AB: 11 − 5.`, ask:A('Base?',['6','7','11'],0)},
+    {t:`Double the area: a rectangle.`, ask:A('2 × 12 = ?',['18','24','36'],1)},
+    {t:`Height = 24 ÷ 6.`, ask:A('Height?',['2','6','4'],2)},
+    {t:`7 + 4.`, ask:A('y = ?',['11','4','10'],0)}
+  ],
+  trap:`Using the slanted side as the height.`,
+  twin:T(`Triangle A(2,3), B(8,3), C(1,y) with y above 3 has area 18. Find y.`,['6','8','12','9'],3,'Height first, then add 3.','Height 6 → y = 9.') },
+
+{ n:12, icon:'🐟', title:'Guppy Towers', topic:'Equations',
+  q:`4 tanks hold 90 guppies. Each tank has 1, then 2, then 3 more than the one before. How many in tank 4?`,
+  choices:['20','21','23','24','26'], ans:4,
+  big:`Take away the extras → equal groups.`,
+  steps:[
+    {t:`Extras: 0, 1, 3, 6.`, ask:A('Tank 4 extra?',['3','6','4'],1)},
+    {t:`Extras total 10.`, ask:A('90 − 10 = ?',['70','90','80'],2)},
+    {t:`80 ÷ 4.`, ask:A('Tank 1?',['20','22','24'],0)},
+    {t:`20 + 6.`, ask:A('Tank 4?',['24','26','23'],1)}
+  ],
+  trap:`Answering tank 1.`,
+  twin:T(`4 jars hold 50 beads. Each jar has 1, then 2, then 3 more than the one before. How many in jar 4?`,['10','13','16','20'],2,'Remove extras 0, 1, 3, 6.','40 ÷ 4 = 10 → jar 4 = 16.') },
+
+{ n:13, icon:'🐇', title:'Bunny Hops', topic:'Counting',
+  q:`Buzz makes 6 hops, each one step up or down a staircase, starting and ending on the ground (never below). How many hop orders?`,
+  choices:['4','5','6','8','12'], ans:1,
+  big:`Equal ups and downs, never below ground.`,
+  steps:[
+    {t:`Back home: same ups and downs.`, ask:A('Ups?',['2','4','3'],2)},
+    {t:`Can't go under the ground.`, ask:A('First hop down?',['no','yes','once'],0)},
+    {t:`Check UDDUUD.`, ask:A('Stays above?',['yes','no','at the end'],1)},
+    {t:`UUUDDD, UUDUDD, UUDDUD, UDUUDD, UDUDUD.`, ask:A('How many?',['4','6','5'],2)}
+  ],
+  trap:`Allowing hops below the ground.`,
+  twin:T(`A bunny makes 4 hops, starting and ending on the ground, never below it. How many orders?`,['2','3','4','6'],0,'Two ups, two downs, safely.','UUDD and UDUD.') },
+
+{ n:14, icon:'🗺️', title:'One-Way Roads', topic:'Shortest path',
+  q:`Follow the one-way roads (numbers are lengths). What is the shortest trip from A to Z?`,
+  choices:['28','29','30','31','32'], ans:0,
+  big:`Find the shortest way to each stop, one by one.`,
+  steps:[
+    {t:`A → X → M = 5 + 2.`, ask:A('Best to M?',['8','7','10'],1)},
+    {t:`Then M → Y: 7 + 6.`, ask:A('Best to Y?',['15','14','13'],2)},
+    {t:`Then Y → C: 13 + 5.`, ask:A('Best to C?',['18','21','19'],0)},
+    {t:`Finish C → Z: 18 + 10.`, ask:A('Best to Z?',['30','28','32'],1)}
+  ],
+  trap:`Ignoring the arrow directions.`,
+  twin:T(`One-way roads: A→B 4, A→C 7, B→C 1, B→D 8, C→D 3. Shortest A to D?`,['10','12','7','8'],3,'Compare whole routes.','A→B→C→D = 4 + 1 + 3 = 8.') },
+
+{ n:15, icon:'🐞', title:'Flying Bug Code', topic:'Digit puzzles',
+  q:`F, L, Y, B, U, G are 6 different digits. [[8 × FLYFLY = BUGBUG]] with FLYFLY as big as possible. Find [[FLY + BUG]].`,
+  choices:['1089','1098','1107','1116','1125'], ans:2,
+  big:`FLYFLY = FLY × 1001.`,
+  steps:[
+    {t:`123123 = 123 × 1001.`, ask:A('123123 ÷ 123 = ?',['101','1000','1001'],2)},
+    {t:`So 8 × FLY = BUG.`, ask:A('Digits in BUG?',['3','4','6'],0)},
+    {t:`FLY ≤ 124; 124 × 8 = 992 repeats.`, ask:A('124 OK?',['yes','no','with 0'],1)},
+    {t:`123 × 8 = 984 works.`, ask:A('123 + 984 = ?',['1098','1116','1107'],2)}
+  ],
+  trap:`Forgetting all 6 digits must differ.`,
+  twin:T(`A, B, C, D are 4 different digits. [[3 × ABAB = CDCD]], ABAB as big as possible. Find [[AB + CD]].`,['124','128','132','136'],1,'ABAB = AB × 101.','32 × 3 = 96 → 32 + 96 = 128.') },
+
+{ n:16, icon:'🔢', title:'Hide the Threes', topic:'Optimisation',
+  q:`Put 1–81 in a 9 × 9 grid. Fewest rows + columns whose product is a multiple of 3?`,
+  choices:['8','9','10','11','12'], ans:3,
+  big:`Pack the special numbers into a small block.`,
+  steps:[
+    {t:`Multiples of 3 from 1 to 81.`, ask:A('How many?',['9','27','81'],1)},
+    {t:`Each one marks its row and column.`, ask:A('A row is marked if it has…',['an odd number','only 3s','a multiple of 3'],2)},
+    {t:`Rows + columns = 10 hold at most 5 × 5.`, ask:A('5 × 5 = ?',['25','27','30'],0)},
+    {t:`5 rows × 6 columns = 30 spots.`, ask:A('Fewest?',['10','11','12'],1)}
+  ],
+  trap:`Forgetting to count the columns.`,
+  twin:T(`Put 1–16 in a 4 × 4 grid. Fewest rows + columns whose product is a multiple of 3?`,['4','6','5','7'],2,'How many multiples of 3? Pack them.','5 multiples fit in 2 × 3 → 5.') },
+
+{ n:17, icon:'♟️', title:'Kings Need Space', topic:'Counting',
+  q:`Put a white king and a black king on a 3 × 3 board so neither attacks the other (kings attack 1 step any way). How many ways?`,
+  choices:['20','24','27','28','32'], ans:4,
+  big:`Count safe squares for each spot of the first king.`,
+  steps:[
+    {t:`A king in the middle attacks all.`, ask:A('Safe squares?',['0','1','4'],0)},
+    {t:`A corner king leaves 5 safe squares.`, ask:A('4 corners → ?',['16','20','24'],1)},
+    {t:`An edge king leaves 3.`, ask:A('4 edges → ?',['8','16','12'],2)},
+    {t:`White and black are different.`, ask:A('20 + 12 = ?',['32','16','28'],0)}
+  ],
+  trap:`Treating the two kings as the same.`,
+  twin:T(`A board is one row of 4 squares. Put a white and a black king on it, not next to each other. How many ways?`,['6','3','4','8'],0,'Black\'s safe squares for each white spot.','2 + 1 + 1 + 2 = 6.') },
+
+{ n:18, icon:'🎯', title:'Ring Balance', topic:'Circle area',
+  q:`Circles with radii 1, 2, 3 share a centre. The middle ring is shaded, plus a slice BOC of the outer ring. Shaded = unshaded. Angle BOC?`,
+  choices:['108','120','135','144','150'], ans:0,
+  big:`A slice takes the same share of a ring.`,
+  steps:[
+    {t:`Big circle: 9π; half is 4.5π.`, ask:A('Shaded must be?',['3π','4.5π','5π'],1)},
+    {t:`Middle ring: 4π − π = 3π.`, ask:A('Still needed?',['3π','2π','1.5π'],2)},
+    {t:`Outer ring: 9π − 4π = 5π.`, ask:A('Share of outer ring?',['3/10','1/2','2/5'],0)},
+    {t:`3/10 of 360°.`, ask:A('Angle?',['120°','108°','144°'],1)}
+  ],
+  trap:`Shading a whole slice instead of the ring part.`,
+  twin:T(`Radii 1, 2, 4. Shade the middle ring and part of the outer ring so half the whole disk is shaded. Angle?`,['120°','135°','180°','150°'],3,'Missing area ÷ outer ring.','Need 5π of 12π → 150°.') },
+
+{ n:19, icon:'👟', title:'Sneaker Mix', topic:'Overlap',
+  q:`15 pairs of sneakers: 3/5 are red (rest white), 2/3 are high-top (rest low). Smallest possible fraction that are red high-tops?`,
+  choices:['0','1/5','4/15','1/3','2/5'], ans:2,
+  big:`Give the high-tops to white first.`,
+  steps:[
+    {t:`9 red, 6 white.`, ask:A('White?',['9','5','6'],2)},
+    {t:`2/3 of 15 are high-tops.`, ask:A('High-tops?',['10','5','12'],0)},
+    {t:`All 6 white are high-tops → 4 left.`, ask:A('Red high-tops?',['3','4','5'],1)},
+    {t:`4 out of 15.`, ask:A('Fraction?',['4/9','4/10','4/15'],2)}
+  ],
+  trap:`Dividing by the red pairs only.`,
+  twin:T(`12 pairs: 2/3 red, 3/4 high-top. Smallest fraction that are red high-tops?`,['1/4','1/3','5/12','1/2'],2,'Make every white pair high-top.','9 high-tops − 4 white = 5 → 5/12.') },
+
+{ n:20, icon:'🧊', title:'Cube Triangles', topic:'3D geometry',
+  q:`Pick 3 corners of a cube, one of them P. How many of these triangles have all 3 sides equal?`,
+  choices:['0','1','2','3','6'], ans:3,
+  big:`Equal sides = equal distances.`,
+  steps:[
+    {t:`Edge, face diagonal, body diagonal.`, ask:A('Longest?',['body diagonal','edge','face diagonal'],0)},
+    {t:`3 corners are one face diagonal from P.`, ask:A('How many?',['2','3','4'],1)},
+    {t:`They are face diagonals apart too.`, ask:A('Equal sides?',['no','two','yes'],2)},
+    {t:`Pairs of those 3 corners.`, ask:A('Triangles?',['3','1','6'],0)}
+  ],
+  trap:`Trusting how lengths look in the picture.`,
+  twin:T(`A cube has [[2 cm]] edges. Pick 3 corners including a fixed corner P. How many equal-sided triangles?`,['1','3','4','6'],1,'Corners a face diagonal away from P.','3 corners → 3 pairs → 3 triangles.') },
+
+{ n:21, icon:'🐸', title:'Frog Swap', topic:'Ratios',
+  q:`Frogs are green in shade, yellow in sun. Green : yellow = 3 : 1. Then 3 green go to the sun and 5 yellow go to the shade: now 4 : 1. Difference now?`,
+  choices:['10','12','16','20','24'], ans:4,
+  big:`Moving frogs keeps the total the same.`,
+  steps:[
+    {t:`Green: +5 − 3.`, ask:A('Net change?',['8','2','3'],1)},
+    {t:`Green's share: 3/4 → 4/5.`, ask:A('Increase?',['1/5','1/4','1/20'],2)},
+    {t:`1/20 of all frogs = 2 frogs.`, ask:A('All frogs?',['40','20','50'],0)},
+    {t:`Now 32 green, 8 yellow.`, ask:A('Difference?',['20','24','32'],1)}
+  ],
+  trap:`Thinking the two ratios have the same group size.`,
+  twin:T(`Green : yellow = 2 : 1. 1 green goes to the sun, 2 yellow go to the shade: now 3 : 1. Difference now?`,['4','8','10','6'],3,'Green goes up by 1.','12 frogs: 9 green, 3 yellow → 6.') },
+
+{ n:22, icon:'🌀', title:'Unroll the Tape', topic:'Area',
+  q:`A tape roll is [[4 in]] across with a [[2 in]] hole. The tape is [[0.015 in]] thick. About how long is it unrolled (nearest 100 inches)?`,
+  choices:['300','600','1200','1500','1800'], ans:1,
+  big:`Unrolling keeps the area the same.`,
+  steps:[
+    {t:`Radii: 1 inch to 2 inches.`, ask:A('Outer radius?',['2','4','1'],0)},
+    {t:`Ring area: π × (4 − 1).`, ask:A('Tape area?',['4π','3π','π'],1)},
+    {t:`Area = thickness × length.`, ask:A('Length = area ÷ ?',['diameter','radius','thickness'],2)},
+    {t:`3π ÷ 0.015 ≈ 628.`, ask:A('Nearest 100?',['600','700','1200'],0)}
+  ],
+  trap:`Using diameters instead of radii.`,
+  twin:T(`Tape roll [[6 in]] across, [[2 in]] hole, [[0.04 in]] thick. Unrolled length, nearest 100 inches?`,['400','500','600','800'],2,'Ring area ÷ thickness.','8π ÷ 0.04 ≈ 628 → 600.') },
+
+{ n:23, icon:'🖌️', title:'Grid Line Painter', topic:'Grid counting',
+  q:`A segment from (0,4) to (2,0) crosses 4 cells. How many cells does the segment from (2000,3000) to (5000,8000) cross?`,
+  choices:['6000','6500','7000','7500','8000'], ans:2,
+  big:`Break it into small repeating pieces.`,
+  steps:[
+    {t:`It goes 3000 across, 5000 up.`, ask:A('Across?',['2000','3000','5000'],1)},
+    {t:`It splits into 1000 copies of 3 × 5.`, ask:A('Copies?',['500','3000','1000'],2)},
+    {t:`Each copy crosses 2 + 4 lines.`, ask:A('Crossings?',['6','7','8'],0)},
+    {t:`6 crossings → 7 cells each.`, ask:A('1000 × 7 = ?',['6000','7000','8000'],1)}
+  ],
+  trap:`Counting cells touched only at a corner.`,
+  twin:T(`A segment joins (1,1) to (7,5). How many cells does it cross?`,['6','7','10','8'],3,'Split at grid corners.','Two 3 × 2 pieces × 4 cells = 8.') },
+
+{ n:24, icon:'⛰️', title:'Mountain Valley', topic:'Overlap',
+  q:`Two triangle mountains, 8 ft and 12 ft tall, 90° peaks and 45° sides, overlap. Total area [[183 ft²]]. How high is the valley point [[h]]?`,
+  choices:['4','5','4√2','6','5√2'], ans:1,
+  big:`Add both mountains, subtract the overlap.`,
+  steps:[
+    {t:`45° sides → base = 2 × height.`, ask:A('8 ft mountain base?',['16','8','12'],0)},
+    {t:`Area = height × height.`, ask:A('64 + 144 = ?',['183','208','200'],1)},
+    {t:`Overlap = 208 − 183.`, ask:A('Overlap?',['5','20','25'],2)},
+    {t:`Overlap = h × h.`, ask:A('h = ?',['5','25','√5'],0)}
+  ],
+  trap:`Forgetting the overlap was counted twice.`,
+  twin:T(`Mountains 6 and 8 units tall (90° peaks, 45° sides) overlap. Total area 91. Valley height?`,['2','3','4','5'],1,'Both areas minus total.','36 + 64 − 91 = 9 → 3.') },
+
+{ n:25, icon:'✈️', title:'Seats Together', topic:'Probability',
+  q:`A plane has 4 rows of 3 seats. 8 people sit randomly. Then a couple boards. Chance two seats next to each other in a row are free?`,
+  choices:['8/15','32/55','20/33','34/55','8/11'], ans:2,
+  big:`Count the bad cases, then subtract.`,
+  steps:[
+    {t:`4 seats stay empty: 495 ways.`, ask:A('Empty seats?',['8','4','2'],1)},
+    {t:`Bad = no row has 2 empty side by side.`, ask:A('Both end seats empty OK?',['no','sometimes','yes'],2)},
+    {t:`One empty per row: 3⁴ = 81.`, ask:A('Choices per row?',['3','2','4'],0)},
+    {t:`Other bad cases: 108 + 6.`, ask:A('81 + 108 + 6 = ?',['189','195','200'],1)},
+    {t:`Good: 495 − 195 = 300.`, ask:A('300/495 = ?',['13/33','32/55','20/33'],2)}
+  ],
+  trap:`Counting seat pairs instead of seat sets.`,
+  twin:T(`2 rows of 3 seats; 4 people sit randomly. Chance the 2 empty seats are side by side in a row?`,['1/5','1/3','2/5','4/15'],3,'Count empty pairs, then good pairs.','4 good pairs of 15 → 4/15.') }
+];
+YEARS[2024] = Object.assign(YEARS[2024] || {widgets:{}}, { probs: P24, twins: P24.map(p=>Object.assign({n:p.n}, p.twin)) });
+
+/* ===== 2024 widgets (part A) ===== */
+const W24 = (YEARS[2024] = YEARS[2024] || {probs:[], twins:[], widgets:{}}).widgets;
+
+/* 1 · units digit */
+W24[1] = (box, k) => {
+  const svg = k.svg(720, 300);
+  const nums = [22222, 2222, 222, 22, 2];
+  let total = 222222; const used = [];
+  const big = S('text',{x:600,y:60,'text-anchor':'end','font-size':34,fill:'#1D4ED8',class:'mono',text:'222222'},svg);
+  const rows = nums.map((n,i)=>{
+    const g = S('g',{class:'tap'},svg);
+    S('rect',{x:330,y:80+i*40,width:290,height:34,rx:8,fill:'#fff',stroke:'#F59E0B','stroke-width':2},g);
+    S('text',{x:600,y:106+i*40,'text-anchor':'end','font-size':24,fill:'#B45309',text:'− '+n},g);
+    g.addEventListener('click',()=>sub(i,g));
+    return g;
+  });
+  S('rect',{x:578,y:24,width:30,height:270,rx:8,fill:'rgba(236,72,153,.12)',stroke:'#EC4899','stroke-width':2},svg);
+  S('text',{x:593,y:20,'text-anchor':'middle','font-size':13,fill:'#EC4899',text:'ones'},svg);
+  const res = S('text',{x:120,y:150,'text-anchor':'middle','font-size':40,fill:'#2B2340',text:'222222'},svg);
+  const out = k.readout(k.row(),'Tap each number to subtract it.');
+  function sub(i,g){
+    if (used.includes(i)) return; used.push(i); total -= nums[i]; g.style.opacity = .4;
+    res.textContent = total;
+    k.say(out, used.length===5 ? `${total} → ones digit 2` : `Ones digit now: ${total%10}`, used.length===5?'ok':null);
+  }
+  return { step(i){ if(i===2) nums.forEach((_,j)=>sub(j, rows[j])); } };
+};
+
+/* 2 · fractions to decimals */
+W24[2] = (box, k) => {
+  const svg = k.svg(720, 240);
+  const parts = [[44,11,4],[110,44,2.5],[44,1100,0.04]];
+  const shown = [false,false,false];
+  const cards = parts.map(([a,b,v],i)=>{
+    const g = S('g',{class:'tap'},svg);
+    S('rect',{x:40+i*230,y:20,width:200,height:110,rx:16,fill:'#fff',stroke:'#3B82F6','stroke-width':3},g);
+    svgFrac(g, 140+i*230, 70, a, b, 26, '#1D4ED8');
+    const t = S('text',{x:140+i*230,y:120,'text-anchor':'middle','font-size':16,fill:'#6B6385',text:'tap'},g);
+    g.addEventListener('click',()=>{ shown[i]=true; t.textContent = '= '+v; setA(t,{fill:'#16A34A','font-size':22}); upd(); });
+    return g;
+  });
+  const sum = S('text',{x:360,y:200,'text-anchor':'middle','font-size':26,fill:'#2B2340'},svg);
+  const out = k.readout(k.row(),'Tap each fraction.');
+  function upd(){
+    const vals = parts.filter((_,i)=>shown[i]).map(p=>p[2]);
+    sum.textContent = vals.length ? vals.join(' + ') + (vals.length===3 ? ' = 6.54' : '') : '';
+    k.say(out, vals.length===3 ? '4 + 2.5 + 0.04 = 6.54' : `${vals.length} of 3 done`, vals.length===3?'ok':null);
+  }
+  return {};
+};
+
+/* 4 · leave one out → perfect square */
+W24[4] = (box, k) => {
+  const svg = k.svg(720, 300);
+  let left = -1;
+  const tiles = [];
+  for (let n=1;n<=9;n++){
+    const g = S('g',{class:'tap',transform:`translate(${20+(n-1)*76},20)`},svg);
+    const r = S('rect',{width:66,height:66,rx:12,fill:'#fff',stroke:'#3B82F6','stroke-width':3},g);
+    S('text',{x:33,y:44,'text-anchor':'middle','font-size':28,fill:'#1D4ED8',text:n},g);
+    g.addEventListener('click',()=>{ left = left===n? -1 : n; draw(); });
+    tiles.push(r);
+  }
+  const dots = S('g',{},svg);
+  const out = k.readout(k.row(),'Tap the number Yunji left out.');
+  function draw(){
+    tiles.forEach((r,i)=>setA(r,{fill: i+1===left ? '#F3F4F6' : '#fff', stroke: i+1===left ? '#CBD5E1':'#3B82F6'}));
+    dots.innerHTML = '';
+    const s = 45 - (left>0?left:0), root = Math.round(Math.sqrt(s)), sq = root*root===s;
+    const side = Math.ceil(Math.sqrt(s));
+    for (let i=0;i<s;i++) S('circle',{cx:300+(i%side)*20,cy:120+Math.floor(i/side)*20,r:7,fill: sq?'#16A34A':'#F59E0B'},dots);
+    k.say(out, left<0 ? 'All nine add to 45. Tap one to leave it out.' : (sq ? `45 − ${left} = ${s} = ${root} × ${root} ✓` : `45 − ${left} = ${s}: not a square ✗`), left<0?null:(sq?'ok':'bad'));
+  }
+  draw();
+  return {};
+};
+
+/* 5 · dice products that are multiples of 6 */
+W24[5] = (box, k) => {
+  const svg = k.svg(720, 380, 560);
+  const U = 52, OX = 80, OY = 50;
+  const cells = [];
+  for (let a=1;a<=6;a++){ S('text',{x:OX+(a-1)*U+U/2,y:OY-12,'text-anchor':'middle','font-size':16,fill:'#6B6385',text:a},svg); S('text',{x:OX-16,y:OY+(a-1)*U+U/2+6,'text-anchor':'middle','font-size':16,fill:'#6B6385',text:a},svg); }
+  for (let a=1;a<=6;a++) for (let b=1;b<=6;b++){
+    const m = (a*b)%6===0;
+    const r = S('rect',{x:OX+(b-1)*U,y:OY+(a-1)*U,width:U-4,height:U-4,rx:8,fill: m?'#DCFCE7':'#F3F4F6',stroke: m?'#16A34A':'#E5E7EB','stroke-width':2},svg);
+    S('text',{x:OX+(b-1)*U+U/2-2,y:OY+(a-1)*U+U/2+5,'text-anchor':'middle','font-size':14,fill: m?'#166534':'#9CA3AF',text:a*b},svg);
+    cells.push({a,b,m,r});
+  }
+  const r = k.row();
+  [5,6,7,8,9].forEach(s=>k.btn(r,'sum '+s, ()=>show(s), s===6?'o':'alt'));
+  const out = k.readout(k.row(),'Green = product is a multiple of 6.');
+  function show(s){
+    let hit = 0;
+    cells.forEach(c=>{ const on = c.a+c.b===s; if (on && c.m) hit++; setA(c.r,{stroke: on ? '#E11D48' : (c.m?'#16A34A':'#E5E7EB'),'stroke-width': on?4:2}); });
+    k.say(out, hit ? `Sum ${s}: ${hit} green way${hit>1?'s':''} ✓` : `Sum ${s}: no green cell — impossible!`, hit?null:'ok');
+  }
+  return { step(i){ if(i===2) show(6); } };
+};
+
+/* 8 · money tree */
+W24[8] = (box, k) => {
+  const svg = k.svg(720, 330);
+  const levels = [[2]];
+  for (let d=0; d<3; d++){ const nx = []; levels[d].forEach(v=>{ nx.push(v+3, v*2); }); levels.push(nx); }
+  const pos = (d,i)=>[80+d*190, 165 + (i - (levels[d].length-1)/2) * (300/Math.max(levels[d].length,1))];
+  const nodes = [];
+  levels.forEach((L,d)=>L.forEach((v,i)=>{
+    const [x,y] = pos(d,i);
+    if (d>0){ const [px,py] = pos(d-1,Math.floor(i/2)); S('line',{x1:px+18,y1:py,x2:x-18,y2:y,stroke: i%2?'#8B5CF6':'#F59E0B','stroke-width':3,opacity:0,class:'ed'+d},svg); }
+    const g = S('g',{opacity: d===0?1:0, class:'nd'+d},svg);
+    S('circle',{cx:x,cy:y,r:17,fill:'#fff',stroke:'#16A34A','stroke-width':3},g);
+    S('text',{x,y:y+5,'text-anchor':'middle','font-size':13,fill:'#166534',text:'$'+v},g);
+    nodes.push(g);
+  }));
+  ['Mon','Tue','Wed','Thu'].forEach((d,i)=>S('text',{x:80+i*190,y:20,'text-anchor':'middle','font-size':15,fill:'#6B6385',text:d},svg));
+  let day = 0;
+  const r = k.row();
+  const nb = k.btn(r,'Next day ▶', ()=>next(),'g');
+  const out = k.readout(k.row(),'Orange = +$3 · purple = double');
+  function next(){
+    if (day>=3) return; day++;
+    svg.querySelectorAll('.nd'+day+', .ed'+day).forEach(e=>e.setAttribute('opacity',1));
+    if (day===3){ nb.disabled = true; const u = [...new Set(levels[3])].sort((a,b)=>a-b); k.say(out, `Thursday: ${levels[3].join(', ')} → ${u.length} different (${u.join(', ')})`, 'ok'); }
+    else k.say(out, `Day ${day+1}: ${levels[day].join(', ')}`);
+  }
+  return { step(i){ while (day < Math.min(i+1,3)) next(); } };
+};
+
+/* 9 · marbles in parts */
+W24[9] = (box, k) => {
+  const svg = k.svg(720, 260);
+  const g = S('g',{},svg);
+  let part = 2;
+  const r = k.row();
+  k.slider(r,'1 part =', 1, 5, 1, 2, v=>{ part=v; draw(); });
+  const out = k.readout(k.row(),'');
+  function draw(){
+    g.innerHTML = '';
+    const rows = [['red',1,'#EF4444'],['green',2,'#22C55E'],['blue',4,'#3B82F6']];
+    rows.forEach(([n,p,c],j)=>{
+      S('text',{x:20,y:60+j*60,'font-size':18,fill:c,text:n},g);
+      for (let q=0;q<p;q++){ S('rect',{x:100+q*130,y:35+j*60,width:124,height:40,rx:10,fill:c,opacity:.25,stroke:c,'stroke-width':2},g); S('text',{x:162+q*130,y:62+j*60,'text-anchor':'middle','font-size':17,fill:c,text:part},g); }
+    });
+    const tot = 7*part;
+    k.say(out, `7 parts × ${part} = ${tot} marbles` + (tot===28 ? ' ✓ (one of the choices!)' : ''), tot===28?'ok':null);
+  }
+  draw();
+  return {};
+};
+
+/* 10 · CO₂ line */
+W24[10] = (box, k) => {
+  const svg = k.svg(720, 230);
+  const X = y => 50 + (y-1980)*12.4;
+  S('line',{x1:X(1980),y1:150,x2:X(2030),y2:150,stroke:'#2B2340','stroke-width':3},svg);
+  for (let y=1980;y<=2030;y+=10){ S('line',{x1:X(y),y1:144,x2:X(y),y2:156,stroke:'#2B2340','stroke-width':2},svg); S('text',{x:X(y),y:176,'text-anchor':'middle','font-size':14,fill:'#6B6385',text:y},svg); }
+  const bar = S('rect',{y:60,height:70,rx:10,fill:'rgba(239,68,68,.25)',stroke:'#EF4444','stroke-width':2},svg);
+  const lab = S('text',{y:102,'text-anchor':'middle','font-size':18,fill:'#B91C1C'},svg);
+  const r = k.row();
+  const sl = k.slider(r,'Year:', 1980, 2030, 5, 1980, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(y){
+    const yrs = y-1980, v = 338 + 1.515*yrs;
+    setA(bar,{x:X(1980),width:Math.max(4,X(y)-X(1980))}); setA(lab,{x:(X(1980)+X(y))/2 || X(1980)+30, text: yrs? `+${yrs} × 1.515` : ''});
+    k.say(out, `${y}: 338 + ${+(1.515*yrs).toFixed(3)} = ${+v.toFixed(2)} ppm` + (y===2030 ? ` → about ${Math.round(v)}` : ''), y===2030?'ok':null);
+  }
+  draw(1980);
+  return { step(i){ if(i===1) sl.set(2030); } };
+};
+
+/* 12 · guppy tanks */
+W24[12] = (box, k) => {
+  const svg = k.svg(720, 300);
+  const g = S('g',{},svg);
+  const r = k.row();
+  const sl = k.slider(r,'Tank 1:', 10, 30, 1, 15, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(x){
+    g.innerHTML = '';
+    const t = [x, x+1, x+3, x+6];
+    t.forEach((v,i)=>{
+      const hgt = v*6, X = 90+i*150;
+      S('rect',{x:X,y:260-hgt,width:110,height:hgt,rx:8,fill:'rgba(59,130,246,.2)',stroke:'#3B82F6','stroke-width':3},g);
+      S('text',{x:X+55,y:250-hgt,'text-anchor':'middle','font-size':20,fill:'#1D4ED8',text:v},g);
+      S('text',{x:X+55,y:285,'text-anchor':'middle','font-size':14,fill:'#6B6385',text:'tank '+(i+1)},g);
+    });
+    const s = t.reduce((a,b)=>a+b,0);
+    k.say(out, `${t.join(' + ')} = ${s}` + (s===90 ? ' ✓  tank 4 = '+t[3] : s<90 ? ' (too few)' : ' (too many)'), s===90?'ok':(s<90?null:'bad'));
+  }
+  draw(15);
+  return { step(i){ if(i===2) sl.set(20); } };
+};
+
+/* 15 · FLY × 8 = BUG */
+W24[15] = (box, k) => {
+  const svg = k.svg(720, 210);
+  const t1 = S('text',{x:360,y:70,'text-anchor':'middle','font-size':42,fill:'#1D4ED8',class:'mono'},svg);
+  const t2 = S('text',{x:360,y:130,'text-anchor':'middle','font-size':42,fill:'#B45309',class:'mono'},svg);
+  const t3 = S('text',{x:360,y:180,'text-anchor':'middle','font-size':18},svg);
+  const r = k.row();
+  const sl = k.slider(r,'FLY =', 100, 124, 1, 124, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  k.hint('FLYFLY = FLY × 1001, so 8 × FLY = BUG.');
+  function draw(f){
+    const b = 8*f, digits = String(f)+String(b), distinct = new Set(digits).size===6 && b<1000;
+    t1.textContent = `FLY = ${f}`; t2.textContent = `8 × ${f} = ${b}`;
+    setA(t3,{text: b>=1000 ? 'too big (4 digits)' : distinct ? 'all six digits different ✓' : 'a digit repeats ✗', fill: distinct?'#16A34A':'#E11D48'});
+    k.say(out, distinct ? `${f} + ${b} = ${f+b}` : 'Find the biggest FLY that works.', distinct?'ok':null);
+  }
+  draw(124);
+  return { step(i){ if(i===2) sl.set(123); } };
+};
+
+/* 16 · multiples of 3 in a 9×9 grid */
+W24[16] = (box, k) => {
+  const svg = k.svg(720, 380, 600);
+  const U = 38, OX = 30, OY = 20;
+  const cells = [];
+  for (let r=0;r<9;r++) for (let c=0;c<9;c++) cells.push(S('rect',{x:OX+c*U,y:OY+r*U,width:U-3,height:U-3,rx:5,fill:'#fff',stroke:'#E5E7EB'},svg));
+  const info = S('text',{x:530,y:150,'text-anchor':'middle','font-size':20,fill:'#2B2340'},svg);
+  const info2 = S('text',{x:530,y:190,'text-anchor':'middle','font-size':18,fill:'#6B6385'},svg);
+  const r = k.row();
+  const sl = k.slider(r,'Rows used:', 3, 9, 1, 3, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  k.hint('Pack the 27 multiples of 3 into a small block.');
+  function draw(rows){
+    const cols = Math.ceil(27/rows);
+    let n = 0;
+    cells.forEach((e,i)=>{ const rr = Math.floor(i/9), cc = i%9; const on = rr<rows && cc<cols && n<27 && (n++,true); setA(e,{fill: on?'#FDE68A':'#fff', stroke: on?'#D97706':'#E5E7EB'}); });
+    info.textContent = `${rows} rows × ${cols} columns`;
+    info2.textContent = `holds ${rows*cols} ≥ 27`;
+    k.say(out, `Rows + columns with a 3: ${rows} + ${cols} = ${rows+cols}`, rows+cols===11?'ok':null);
+  }
+  draw(3);
+  return { step(i){ if(i===2) sl.set(5); } };
+};
+
+/* 19 · red high-tops */
+W24[19] = (box, k) => {
+  const svg = k.svg(720, 230);
+  const shoes = [];
+  for (let i=0;i<15;i++){
+    const x = 20 + i*46;
+    const red = i < 9;
+    S('rect',{x,y:110,width:40,height:40,rx:8,fill: red?'#FECACA':'#fff',stroke: red?'#EF4444':'#CBD5E1','stroke-width':3},svg);
+    shoes.push(S('text',{x:x+20,y:100,'text-anchor':'middle','font-size':22,text:''},svg));
+  }
+  S('text',{x:20,y:180,'font-size':15,fill:'#EF4444',text:'9 red'},svg);
+  S('text',{x:450,y:180,'font-size':15,fill:'#6B6385',text:'6 white'},svg);
+  const r = k.row();
+  const sl = k.slider(r,'Slide the 10 high-tops:', 0, 5, 1, 0, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(off){
+    let both = 0;
+    shoes.forEach((t,i)=>{ const hi = i>=off && i<off+10; t.textContent = hi ? '👟' : ''; if (hi && i<9) both++; });
+    k.say(out, `Red AND high-top: ${both} → ${both}/15` + (both===4 ? ' (smallest!)' : ''), both===4?'ok':null);
+  }
+  draw(0);
+  return { step(i){ if(i===2) sl.set(5); } };
+};
+
+/* 21 · frogs in sun and shade */
+W24[21] = (box, k) => {
+  const svg = k.svg(720, 260);
+  S('rect',{x:20,y:20,width:330,height:200,rx:16,fill:'#DCFCE7'},svg); S('text',{x:185,y:45,'text-anchor':'middle','font-size':16,fill:'#166534',text:'🌳 shade = green'},svg);
+  S('rect',{x:370,y:20,width:330,height:200,rx:16,fill:'#FEF9C3'},svg); S('text',{x:535,y:45,'text-anchor':'middle','font-size':16,fill:'#854D0E',text:'☀️ sun = yellow'},svg);
+  const gg = S('g',{},svg);
+  let y = 4, moved = false;
+  const r = k.row();
+  k.slider(r,'Yellow at first:', 3, 12, 1, 4, v=>{ y=v; moved=false; draw(); });
+  k.btn(r,'🐸 Move frogs', ()=>{ moved=true; draw(); },'g');
+  const out = k.readout(k.row(),'');
+  function draw(){
+    gg.innerHTML = '';
+    const G = moved ? 3*y - 3 + 5 : 3*y, Y = moved ? y + 3 - 5 : y;
+    for (let i=0;i<G;i++) S('text',{x:40+(i%12)*26,y:80+Math.floor(i/12)*30,'font-size':20,text:'🐸'},gg);
+    for (let i=0;i<Math.max(Y,0);i++) S('text',{x:390+(i%12)*26,y:80+Math.floor(i/12)*30,'font-size':20,text:'🐤'},gg);
+    const ok = moved && G === 4*Y;
+    k.say(out, moved ? `Green ${G} : yellow ${Y}` + (ok ? ` = 4 : 1 ✓  difference ${G-Y}` : ' — not 4 : 1') : `Green ${G} : yellow ${Y} = 3 : 1`, moved ? (ok?'ok':'bad') : null);
+  }
+  draw();
+  return {};
+};
+
+/* ===== 2024 widgets (part B) ===== */
+
+/* 11 · triangle area on a grid */
+W24[11] = (box, k) => {
+  const U = 40, OX = 30, OY = 520;
+  const svg = k.svg(560, 560, 440);
+  const P = (x,y)=>[OX+x*U, OY-y*U];
+  for (let x=0;x<=13;x++) S('line',{x1:P(x,0)[0],y1:P(x,0)[1],x2:P(x,13)[0],y2:P(x,13)[1],stroke:'#EEF2F7'},svg);
+  for (let y=0;y<=13;y++) S('line',{x1:P(0,y)[0],y1:P(0,y)[1],x2:P(13,y)[0],y2:P(13,y)[1],stroke:'#EEF2F7'},svg);
+  const tri = S('polygon',{fill:'rgba(139,92,246,.25)',stroke:'#7C3AED','stroke-width':3},svg);
+  const ht = S('line',{stroke:'#E11D48','stroke-width':3,'stroke-dasharray':'6 5'},svg);
+  const hl = S('text',{'font-size':16,fill:'#E11D48'},svg);
+  S('line',{x1:P(5,7)[0],y1:P(5,7)[1]+16,x2:P(11,7)[0],y2:P(11,7)[1]+16,stroke:'#16A34A','stroke-width':3},svg);
+  S('text',{x:P(8,7)[0],y:P(8,7)[1]+36,'text-anchor':'middle','font-size':16,fill:'#16A34A',text:'base 6'},svg);
+  const lab = (t,x,y)=>S('text',{x:P(x,y)[0],y:P(x,y)[1]-10,'text-anchor':'middle','font-size':16,fill:'#2B2340',text:t},svg);
+  lab('A(5,7)',5,7); lab('B(11,7)',11,7);
+  S('line',{x1:P(3,7)[0],y1:P(3,7)[1],x2:P(5,7)[0],y2:P(5,7)[1],stroke:'#CBD5E1','stroke-dasharray':'4 4'},svg);
+  const cl = S('text',{'text-anchor':'middle','font-size':16,fill:'#2B2340'},svg);
+  const r = k.row();
+  const sl = k.slider(r,'y =', 8, 12, 1, 8, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(y){
+    setA(tri,{points:[P(5,7),P(11,7),P(3,y)].map(p=>p.join(',')).join(' ')});
+    setA(ht,{x1:P(3,7)[0],y1:P(3,7)[1],x2:P(3,y)[0],y2:P(3,y)[1]}); setA(hl,{x:P(3,(7+y)/2)[0]-34,y:P(3,(7+y)/2)[1]+5,text:'h = '+(y-7)});
+    setA(cl,{x:P(3,y)[0],y:P(3,y)[1]-10,text:`C(3,${y})`});
+    const area = 6*(y-7)/2;
+    k.say(out, `Area = 6 × ${y-7} ÷ 2 = ${area}` + (area===12?' ✓':''), area===12?'ok':null);
+  }
+  draw(8);
+  return { step(i){ if(i===2) sl.set(11); } };
+};
+
+/* 25 · seats for the couple */
+W24[25] = (box, k) => {
+  const svg = k.svg(720, 300);
+  const seats = [];
+  for (let r=0;r<4;r++) for (let c=0;c<3;c++){
+    const x = 220 + c*80 + (c>0?0:0), y = 30 + r*62;
+    seats.push(S('rect',{x,y,width:64,height:50,rx:12,fill:'#fff',stroke:'#94A3B8','stroke-width':3},svg));
+    seats.push(S('text',{x:x+32,y:y+34,'text-anchor':'middle','font-size':24,text:''},svg));
+  }
+  S('text',{x:120,y:150,'text-anchor':'middle','font-size':40,text:'✈️'},svg);
+  const res = S('text',{x:600,y:150,'text-anchor':'middle','font-size':18,fill:'#2B2340'},svg);
+  let tries = 0, wins = 0;
+  const r = k.row();
+  k.btn(r,'🎲 Board 8 people', ()=>board(true),'g');
+  k.btn(r,'Run 1000 flights', ()=>{ for (let i=0;i<999;i++) board(false); board(true); },'p');
+  const out = k.readout(k.row(),'Can the couple sit side by side?');
+  function board(show){
+    const idx = shuffle([...Array(12).keys()]).slice(0,8);
+    const full = Array(12).fill(false); idx.forEach(i=>full[i]=true);
+    let ok = false;
+    for (let r=0;r<4;r++){ const a=full[r*3],b=full[r*3+1],c=full[r*3+2]; if ((!a&&!b)||(!b&&!c)) ok = true; }
+    tries++; if (ok) wins++;
+    if (show){
+      for (let i=0;i<12;i++){ setA(seats[2*i],{fill: full[i]?'#E2E8F0':'#DCFCE7', stroke: full[i]?'#94A3B8':'#16A34A'}); seats[2*i+1].textContent = full[i]?'🧑':''; }
+      res.textContent = ok ? 'Yes! 💑' : 'No pair ✗';
+      setA(res,{fill: ok?'#16A34A':'#E11D48'});
+      k.say(out, `${wins} of ${tries} flights ≈ ${(wins/tries).toFixed(3)} · exact 20/33 ≈ 0.606`, tries>=500?'ok':null);
+    }
+  }
+  return {};
+};
+
+/* ===== 2024 widgets (part C: figure problems) ===== */
+
+/* 3 · nested squares */
+W24[3] = (box, k) => {
+  const U = 30, OX = 40, OY = 330;
+  const svg = k.svg(720, 350);
+  const sq = [[10,'#94A3B8','gray'],[9,'#fff','white'],[7,'#94A3B8','gray'],[4,'#fff','white']];
+  const els = sq.map(([s,f])=>S('rect',{x:OX,y:OY-s*U,width:s*U,height:s*U,fill:f,stroke:'#2B2340','stroke-width':2},svg));
+  const labs = [S('text',{x:OX+9.5*U,y:OY-5*U,'text-anchor':'middle','font-size':16,fill:'#fff'},svg), S('text',{x:OX+5.5*U,y:OY-5.5*U,'text-anchor':'middle','font-size':16,fill:'#fff'},svg)];
+  const got = {};
+  const r = k.row();
+  k.btn(r,'Outer gray ring', ()=>{ got.o = 19; setA(els[0],{fill:'#7C3AED'}); labs[0].textContent='19'; upd(); },'p');
+  k.btn(r,'Inner gray ring', ()=>{ got.i = 33; setA(els[2],{fill:'#7C3AED'}); labs[1].textContent='33'; upd(); },'p');
+  const out = k.readout(k.row(),'Each visible ring = its square − the square on top.');
+  const info = S('text',{x:500,y:120,'font-size':18,fill:'#2B2340'},svg);
+  const info2 = S('text',{x:500,y:160,'font-size':18,fill:'#2B2340'},svg);
+  function upd(){
+    info.textContent = got.o ? '10 × 10 − 9 × 9 = 19' : '';
+    info2.textContent = got.i ? '7 × 7 − 4 × 4 = 33' : '';
+    k.say(out, got.o && got.i ? '19 + 33 = 52' : 'Tap both gray rings.', got.o&&got.i?'ok':null);
+  }
+  return { step(i){ if(i===0) r.children[0].click(); if(i===1) r.children[1].click(); } };
+};
+
+/* 6 · four skating paths */
+W24[6] = (box, k) => {
+  const svg = k.svg(720, 330);
+  const U = 50, s3 = Math.sqrt(3);
+  const paths = {
+    P: [['L',-1,-2,-1,2],['A',0,2,180,0],['L',1,2,1,-2],['A',0,-2,0,-180]],
+    Q: [['A',0,2,180,0],['L',1,2,-1,0],['L',-1,0,1,-2],['A',0,-2,0,-180],['L',-1,-2,1,0],['L',1,0,-1,2]],
+    R: [['L',-1,-2,-1,2],['L',-1,2,0.5,2+s3/2],['A',0,2,60,0],['L',1,2,1,-2],['L',1,-2,-0.5,-2-s3/2],['A',0,-2,240,180]],
+    S: [['A',0,2,180,0],['L',1,2,-1,-2],['A',0,-2,180,360],['L',1,-2,-1,2]]
+  };
+  const names = ['P','Q','R','S'];
+  const len = {};
+  const els = {};
+  names.forEach((n,i)=>{
+    const cx = 100 + i*172, cy = 150;
+    const T = (x,y)=>[cx+x*U, cy-y*U];
+    // rink outline
+    S('path',{d:`M${T(-1,-2)} L${T(-1,2)} A${U},${U} 0 0 1 ${T(1,2)} L${T(1,-2)} A${U},${U} 0 0 1 ${T(-1,-2)}`,fill:'#F1F5F9',stroke:'#CBD5E1','stroke-width':2},svg);
+    let d = '', L = 0, first = true;
+    paths[n].forEach(seg=>{
+      if (seg[0]==='L'){ const [,x1,y1,x2,y2] = seg; d += (first?`M${T(x1,y1)}`:` L${T(x1,y1)}`) + ` L${T(x2,y2)}`; L += Math.hypot(x2-x1,y2-y1); }
+      else { const [,ax,ay,a0,a1] = seg; const p = a=>T(ax+Math.cos(a*Math.PI/180), ay+Math.sin(a*Math.PI/180)); const steps = 24; for (let j=0;j<=steps;j++){ const a = a0+(a1-a0)*j/steps; d += (first&&j===0?`M${p(a)}`:` L${p(a)}`); } L += Math.abs(a1-a0)*Math.PI/180; }
+      first = false;
+    });
+    len[n] = L;
+    els[n] = S('path',{d,fill:'none',stroke:'#3B82F6','stroke-width':5,'stroke-linejoin':'round',class:'tap'},svg);
+    S('text',{x:cx,y:300,'text-anchor':'middle','font-size':22,fill:'#2B2340',text:n},svg);
+    els[n].addEventListener('click',()=>measure(n));
+  });
+  const measured = {};
+  const out = k.readout(k.row(),'Tap a path to skate and measure it.');
+  async function measure(n){
+    const el = els[n], Lp = el.getTotalLength();
+    el.style.strokeDasharray = Lp; el.style.strokeDashoffset = Lp; setA(el,{stroke:'#F59E0B'});
+    await tween(900, t=>{ el.style.strokeDashoffset = Lp*(1-t); });
+    measured[n] = len[n];
+    const order = Object.keys(measured).sort((a,b)=>measured[a]-measured[b]);
+    k.say(out, order.map(x=>`${x} ≈ ${measured[x].toFixed(1)}`).join('  <  ') + (order.length===4 ? '  → R, P, S, Q' : ''), order.length===4?'ok':null);
+  }
+  return { step(i){ if(i===3) names.forEach(measure); } };
+};
+
+/* 14 · one-way roads */
+W24[14] = (box, k) => {
+  const svg = k.svg(720, 300);
+  const pos = {A:[50,170], X:[170,60], M:[290,170], Y:[410,60], C:[530,170], Z:[660,110]};
+  const E = [['A','M',8],['A','X',5],['X','M',2],['X','Y',10],['M','Y',6],['M','C',14],['Y','C',5],['C','Z',10],['Y','Z',17],['M','Z',25]];
+  const defs = S('defs',{},svg); const mk = S('marker',{id:'ar24',viewBox:'0 0 10 10',refX:10,refY:5,markerWidth:7,markerHeight:7,orient:'auto'},defs); S('path',{d:'M0,0 L10,5 L0,10 z',fill:'#64748B'},mk);
+  const eEls = {};
+  E.forEach(([a,b,w])=>{
+    const [x1,y1] = pos[a], [x2,y2] = pos[b];
+    const dx = x2-x1, dy = y2-y1, L = Math.hypot(dx,dy), ux = dx/L, uy = dy/L;
+    let d, lx, ly;
+    if (a==='M' && b==='Z'){ d = `M${x1+ux*22},${y1+uy*22} Q${(x1+x2)/2},${290} ${x2-14},${y2+16}`; lx = (x1+x2)/2; ly = 245; }
+    else { d = `M${x1+ux*22},${y1+uy*22} L${x2-ux*24},${y2-uy*24}`; lx = (x1+x2)/2 - uy*14; ly = (y1+y2)/2 + ux*14 + 5; }
+    eEls[a+b] = S('path',{d,fill:'none',stroke:'#CBD5E1','stroke-width':4,'marker-end':'url(#ar24)'},svg);
+    S('text',{x:lx,y:ly,'text-anchor':'middle','font-size':15,fill:'#6B6385',text:w},svg);
+  });
+  const nEls = {};
+  for (const n in pos){ const [x,y] = pos[n]; const g = S('g',{class:'tap'},svg); S('circle',{cx:x,cy:y,r:20,fill:'#fff',stroke:'#3B82F6','stroke-width':3},g); S('text',{x,y:y+6,'text-anchor':'middle','font-size':17,fill:'#1D4ED8',text:n},g); nEls[n] = S('text',{x,y:y-26,'text-anchor':'middle','font-size':14,fill:'#16A34A',text:''},svg); g.addEventListener('click',()=>tap(n)); }
+  let route = ['A'], total = 0;
+  const r = k.row();
+  k.btn(r,'↺ New route', ()=>{ route=['A']; total=0; Object.values(eEls).forEach(e=>setA(e,{stroke:'#CBD5E1'})); upd(); },'alt');
+  k.btn(r,'Best to every stop', ()=>best(),'p');
+  const out = k.readout(k.row(),'');
+  function tap(n){
+    const last = route[route.length-1], e = E.find(([a,b])=>a===last && b===n);
+    if (!e) return k.say(out, `No road ${last} → ${n} (one way!)`, 'bad');
+    route.push(n); total += e[2]; setA(eEls[last+n],{stroke:'#F59E0B'});
+    upd();
+  }
+  function upd(){ k.say(out, route.join(' → ') + `  =  ${total}` + (route[route.length-1]==='Z' ? (total===28 ? ' ✓ shortest!' : ' (try shorter)') : ''), route[route.length-1]==='Z' && total===28 ? 'ok' : null); }
+  function best(){ const d = {A:0, X:5, M:7, Y:13, C:18, Z:28}; for (const n in d) nEls[n].textContent = d[n]; }
+  upd();
+  return { step(i){ if(i===3) best(); } };
+};
+
+/* 20 · equal-sided triangles in a cube */
+W24[20] = (box, k) => {
+  const svg = k.svg(720, 360, 560);
+  const V = {P:[0,1,0], Q:[1,1,0], V:[1,0,0], W:[0,0,0], S:[0,1,1], R:[1,1,1], U:[1,0,1], T:[0,0,1]};
+  const pr = ([x,y,z]) => [180 + x*190 + z*95, 280 - y*190 - z*70];
+  const edges = 'PQ QV VW WP SR RU UT TS PS QR VU WT'.split(' ');
+  edges.forEach(e=>{ const a = pr(V[e[0]]), b = pr(V[e[1]]); S('line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#CBD5E1','stroke-width':3},svg); });
+  const tri = S('polygon',{fill:'rgba(139,92,246,.25)',stroke:'#7C3AED','stroke-width':3},svg);
+  const sel = ['P'];
+  const dots = {};
+  for (const n in V){ const [x,y] = pr(V[n]); const g = S('g',{class:'tap'},svg); dots[n] = S('circle',{cx:x,cy:y,r:16,fill: n==='P'?'#FEF3C7':'#fff',stroke:'#3B82F6','stroke-width':3},g); S('text',{x,y:y+6,'text-anchor':'middle','font-size':15,fill:'#1D4ED8',text:n},g); g.addEventListener('click',()=>tap(n)); }
+  const found = new Set();
+  const out = k.readout(k.row(),'P is picked. Tap 2 more corners.');
+  const kind = (a,b)=>{ const d = V[a].reduce((s,v,i)=>s+Math.abs(v-V[b][i]),0); return ['','edge','face diagonal','body diagonal'][d]; };
+  function tap(n){
+    if (sel.length===3){ sel.length = 1; }
+    if (n==='P' || sel.includes(n)) return;
+    sel.push(n);
+    for (const m in dots) setA(dots[m],{fill: sel.includes(m)?'#FEF3C7':'#fff'});
+    if (sel.length===3){
+      setA(tri,{points:sel.map(m=>pr(V[m]).join(',')).join(' ')});
+      const ks = [kind(sel[0],sel[1]), kind(sel[1],sel[2]), kind(sel[0],sel[2])];
+      const eq = ks[0]===ks[1] && ks[1]===ks[2];
+      if (eq) found.add(sel.slice(1).sort().join(''));
+      k.say(out, `${ks.join(' · ')} ${eq ? '→ all equal ✓' : '→ not equal'}  ·  found ${found.size} of 3`, eq?'ok':'bad');
+    } else setA(tri,{points:''});
+  }
+  let run = 0;
+  const seq = async (pairs) => { const me = ++run; for (const [a,b] of pairs){ if (me!==run) return; tap(a); await sleep(350); tap(b); await sleep(1100); } };
+  return { step(i){
+    if (i===0) return seq([['Q','W']]);
+    if (i===1){ run++; for (const m in dots) setA(dots[m],{fill: 'VRT'.includes(m) ? '#DDD6FE' : (m==='P'?'#FEF3C7':'#fff')}); setA(tri,{points:''}); sel.length = 1; k.say(out,'V, R, T: one face diagonal from P'); }
+    if (i===2) return seq([['V','R']]);
+    if (i===3) return seq([['V','T'],['R','T']]);
+  } };
+};
+
+/* 22 · unroll the tape */
+W24[22] = (box, k) => {
+  const svg = k.svg(720, 280);
+  const C = [130,140], U = 50;
+  S('circle',{cx:C[0],cy:C[1],r:2*U,fill:'#94A3B8'},svg);
+  S('circle',{cx:C[0],cy:C[1],r:U,fill:'#fff',stroke:'#2B2340'},svg);
+  S('text',{x:C[0],y:C[1]+5,'text-anchor':'middle','font-size':13,fill:'#6B6385',text:'2 in'},svg);
+  S('text',{x:C[0],y:C[1]+2*U+22,'text-anchor':'middle','font-size':14,fill:'#2B2340',text:'4 in across'},svg);
+  const strip = S('rect',{x:270,y:130,width:0,height:10,fill:'#94A3B8'},svg);
+  const t = S('text',{x:480,y:110,'text-anchor':'middle','font-size':17,fill:'#2B2340'},svg);
+  const t2 = S('text',{x:480,y:180,'text-anchor':'middle','font-size':17,fill:'#16A34A'},svg);
+  const r = k.row();
+  k.btn(r,'Ring area', ()=>{ t.textContent = 'π × (2×2 − 1×1) = 3π ≈ 9.42 sq in'; },'p');
+  k.btn(r,'🧻 Unroll', async ()=>{ await tween(1600, e=>setA(strip,{width:420*e})); t2.textContent = '9.42 ÷ 0.015 ≈ 628 in → about 600'; k.say(out,'Area stays the same: length × 0.015 = 3π','ok'); },'g');
+  const out = k.readout(k.row(),'The gray ring is all tape.');
+  return {};
+};
+
+/* 23 · cells crossed by a line */
+W24[23] = (box, k) => {
+  const svg = k.svg(720, 380, 560);
+  const g = S('g',{},svg);
+  let reps = 1;
+  const r = k.row();
+  k.slider(r,'Copies of the 3 × 5 block:', 1, 3, 1, 1, v=>{ reps=v; draw(); });
+  const out = k.readout(k.row(),'');
+  function draw(){
+    g.innerHTML = '';
+    const W = 3*reps, H = 5*reps, U = Math.min(320/H, 60), OX = 40, OY = 360;
+    for (let x=0;x<W;x++) for (let y=0;y<H;y++){
+      // does segment (0,0)-(W,H) pass through interior of cell [x,x+1]x[y,y+1]? line y = (5/3)x
+      const lo = 5/3*x, hi = 5/3*(x+1);
+      const hit = Math.max(lo,y) < Math.min(hi,y+1) - 1e-9;
+      S('rect',{x:OX+x*U,y:OY-(y+1)*U,width:U-2,height:U-2,fill: hit?'#FDE68A':'#fff',stroke:'#E5E7EB'},g);
+    }
+    S('line',{x1:OX,y1:OY,x2:OX+W*U,y2:OY-H*U,stroke:'#E11D48','stroke-width':3},g);
+    for (let i=1;i<reps;i++) S('circle',{cx:OX+3*i*U,cy:OY-5*i*U,r:6,fill:'#E11D48'},g);
+    k.say(out, `${reps} block${reps>1?'s':''} × 7 cells = ${7*reps} · (1000 blocks → 7000)`, reps>1?'ok':null);
+  }
+  draw();
+  return {};
+};
+
+/* 24 · two mountains */
+W24[24] = (box, k) => {
+  const U = 22, OX = 25, OY = 300;
+  const svg = k.svg(720, 320);
+  const P = (x,y)=>[OX+x*U, OY-y*U];
+  const pts = s => s.map(p=>P(...p).join(',')).join(' ');
+  const m1 = S('polygon',{points:pts([[0,0],[8,8],[16,0]]),fill:'rgba(59,130,246,.25)',stroke:'#3B82F6','stroke-width':2,opacity:0},svg);
+  const m2 = S('polygon',{points:pts([[6,0],[18,12],[30,0]]),fill:'rgba(245,158,11,.25)',stroke:'#F59E0B','stroke-width':2,opacity:0},svg);
+  S('polygon',{points:pts([[0,0],[8,8],[11,5],[18,12],[30,0]]),fill:'rgba(148,163,184,.35)',stroke:'#2B2340','stroke-width':3},svg);
+  const ov = S('polygon',{points:pts([[6,0],[11,5],[16,0]]),fill:'rgba(236,72,153,.6)',stroke:'#EC4899','stroke-width':2,opacity:0},svg);
+  S('line',{x1:P(11,0)[0],y1:P(11,0)[1],x2:P(11,5)[0],y2:P(11,5)[1],stroke:'#E11D48','stroke-width':2,'stroke-dasharray':'5 4'},svg);
+  S('text',{x:P(11,2.5)[0]+8,y:P(11,2.5)[1],'font-size':16,fill:'#E11D48',text:'h'},svg);
+  const r = k.row();
+  k.btn(r,'Left mountain', ()=>{ m1.setAttribute('opacity',1); k.say(out,'8 × 8 = 64'); });
+  k.btn(r,'Right mountain', ()=>{ m2.setAttribute('opacity',1); k.say(out,'12 × 12 = 144'); },'o');
+  k.btn(r,'Overlap', ()=>{ ov.setAttribute('opacity',1); k.say(out,'64 + 144 − 183 = 25 = h × h → h = 5','ok'); },'p');
+  const out = k.readout(k.row(),'A 45° mountain has area = height × height.');
+  return { step(i){ if(i===1){ m1.setAttribute('opacity',1); m2.setAttribute('opacity',1); } if(i===2) ov.setAttribute('opacity',1); } };
+};
+
+/* ===== 2024 widgets (part D): 7, 13, 17, 18 ===== */
+
+/* 7 · fewest 1×1 tiles in a 3 × 7 box */
+W24[7] = (box, k) => {
+  const C = 62, X0 = 40, Y0 = 16, R = 3, N = 7;
+  const svg = k.svg(720, 220);
+  const occ = Array.from({length:R},()=>Array(N).fill(0));
+  const base = S('g',{},svg), tilesG = S('g',{},svg), rowG = S('g',{},svg), fx = S('g',{},svg);
+  const cellR = [];
+  for (let r=0;r<R;r++){ cellR.push([]); for (let c=0;c<N;c++){ const q = S('rect',{x:X0+c*C,y:Y0+r*C,width:C-4,height:C-4,rx:8,fill:'#fff',stroke:'#CBD5E1','stroke-width':2,class:'tap'},base); q.addEventListener('click',()=>place(r,c)); cellR[r].push(q); } }
+  const KIND = {'2x2':[2,2,'#93C5FD','#2563EB'], '1x4':[1,4,'#FCD34D','#D97706'], '1x1':[1,1,'#F9A8D4','#DB2777']};
+  let kind = '2x2', id = 0; const tiles = {};
+  const r1 = k.row(); const kb = {};
+  for (const kk of ['2x2','1x4','1x1']) kb[kk] = k.btn(r1, (kk==='1x1'?'▪ ':'') + kk.replace('x',' × '), ()=>{ kind = kk; for (const q in kb) kb[q].classList.toggle('alt', q!==kind); }, kk===kind ? '' : 'alt');
+  const r2 = k.row();
+  k.btn(r2,'⬍ Stand a bar up', ()=>standUp(),'o');
+  k.btn(r2,'🔎 Row check', ()=>rowCheck(),'p');
+  k.btn(r2,'💡 Best way', ()=>best(),'g');
+  k.btn(r2,'↺ Clear', ()=>clear(),'alt');
+  const out = k.readout(k.row(),'Pick a tile, then tap the box.');
+  function add(r,c,kk){
+    const [hh,ww,fill,str] = KIND[kk]; const t = ++id;
+    for (let i=0;i<hh;i++) for (let j=0;j<ww;j++) occ[r+i][c+j] = t;
+    const el = S('rect',{x:X0+c*C+3,y:Y0+r*C+3,width:ww*C-10,height:hh*C-10,rx:10,fill,stroke:str,'stroke-width':3,class:'tap'},tilesG);
+    el.addEventListener('click',()=>remove(t));
+    tiles[t] = {el, kk};
+  }
+  function remove(t){ tiles[t].el.remove(); delete tiles[t]; for (const row of occ) row.forEach((v,j)=>{ if (v===t) row[j]=0; }); rowG.innerHTML=''; upd(); }
+  function fits(r,c,kk){ const [hh,ww] = KIND[kk]; for (let i=0;i<hh;i++) for (let j=0;j<ww;j++){ if (r+i>=R || c+j>=N || occ[r+i][c+j]) return false; } return true; }
+  function place(r,c){
+    if (occ[r][c]) return remove(occ[r][c]);
+    if (!fits(r,c,kind)){ flash(r,c); k.say(out,'Doesn’t fit there ✗','bad'); return; }
+    add(r,c,kind); rowG.innerHTML=''; upd();
+  }
+  function flash(r,c){ const q = cellR[r][c]; setA(q,{fill:'#FFE4E6'}); setTimeout(()=>setA(q,{fill:'#fff'}),400); }
+  function counts(){ let small=0, empty=0; for (const t in tiles) if (tiles[t].kk==='1x1') small++; occ.forEach(row=>row.forEach(v=>{ if(!v) empty++; })); return {small, empty}; }
+  function upd(){
+    const {small, empty} = counts();
+    if (!empty) k.say(out, `Covered! Small tiles: ${small}` + (small===5 ? ' — the fewest ✓' : ''), small===5 ? 'ok' : null);
+    else k.say(out, `Small tiles: ${small} · empty squares: ${empty}`);
+  }
+  function clear(){ for (const t in tiles) tiles[t].el.remove(); for (const t in tiles) delete tiles[t]; occ.forEach(row=>row.fill(0)); rowG.innerHTML=''; fx.innerHTML=''; k.say(out,'21 squares to cover.'); }
+  async function standUp(){
+    fx.innerHTML = '';
+    const bar = S('rect',{x:X0+6*C+3,y:Y0+3,width:C-10,height:4*C-10,rx:10,fill:'rgba(252,211,77,.8)',stroke:'#E11D48','stroke-width':3,'stroke-dasharray':'6 4'},fx);
+    S('text',{x:X0+6*C+C/2-2,y:Y0+3*C+40,'text-anchor':'middle','font-size':22,fill:'#E11D48',text:'✗'},fx);
+    k.say(out,'4 tall, but only 3 rows ✗ — bars must lie flat.','bad');
+    await sleep(1600); bar.remove(); fx.innerHTML = '';
+  }
+  function rowCheck(){
+    rowG.innerHTML = '';
+    for (let r=0;r<R;r++){
+      let big = 0, small = 0;
+      occ[r].forEach(v=>{ if (v && tiles[v]){ if (tiles[v].kk==='1x1') small++; else big++; } });
+      const left = N - big;
+      S('text',{x:X0+N*C+8,y:Y0+r*C+38,'font-size':16,fill: left%2 ? '#DB2777' : '#2563EB',text:`big ${big} · ${left} left`},rowG);
+    }
+    k.say(out,'Big tiles always cover an EVEN number in a row. 7 is odd → every row needs a small tile.','ok');
+  }
+  function bigOnes(){ clear(); add(0,0,'2x2'); add(0,2,'2x2'); add(0,4,'2x2'); add(2,0,'1x4'); upd(); }
+  function best(){ bigOnes(); [[0,6],[1,6],[2,6],[2,4],[2,5]].forEach(([r,c])=>add(r,c,'1x1')); rowG.innerHTML=''; upd(); }
+  return { step(i){
+    if (i===0){ clear(); k.say(out,'21 = 4 + 4 + … + small ones. Small: 1, 5, 9…'); }
+    if (i===1) standUp();
+    if (i===2){ bigOnes(); rowCheck(); }
+    if (i===3){ rowCheck(); [[0,6],[1,6],[2,6]].forEach(([r,c])=>{ if(!occ[r][c]) add(r,c,'1x1'); }); upd(); }
+    if (i===4) best();
+  } };
+};
+
+/* 13 · bunny hops that never go underground */
+W24[13] = (box, k) => {
+  const svg = k.svg(720, 250);
+  const X0 = 70, Y0 = 210, DX = 92, DY = 52;
+  for (let lv=1; lv<=3; lv++) S('line',{x1:40,y1:Y0-lv*DY,x2:660,y2:Y0-lv*DY,stroke:'#EEF2F7','stroke-width':2},svg);
+  for (let i=0;i<=6;i++) S('text',{x:X0+i*DX,y:Y0+28,'text-anchor':'middle','font-size':13,fill:'#9CA3AF',text: i ? 'hop '+i : 'start'},svg);
+  S('rect',{x:40,y:Y0,width:620,height:14,fill:'#86EFAC'},svg);
+  S('line',{x1:40,y1:Y0,x2:660,y2:Y0,stroke:'#16A34A','stroke-width':4},svg);
+  const path = S('polyline',{fill:'none',stroke:'#3B82F6','stroke-width':5,'stroke-linejoin':'round','stroke-linecap':'round'},svg);
+  const ghost = S('line',{stroke:'#E11D48','stroke-width':5,'stroke-dasharray':'6 5',opacity:0},svg);
+  const bunny = S('text',{x:X0,y:Y0-8,'text-anchor':'middle','font-size':30,text:'🐰'},svg);
+  let seq = '';
+  const found = [];
+  const r = k.row();
+  k.btn(r,'⬆ Up', ()=>hop('U'),'g');
+  k.btn(r,'⬇ Down', ()=>hop('D'),'o');
+  k.btn(r,'↺ Clear', ()=>{ seq=''; draw(); k.say(out,'6 hops. Start and end on the ground.'); },'alt');
+  const out = k.readout(k.row(),'6 hops. Start and end on the ground.');
+  const shelf = h('div',{class:'ctrls'}); box.appendChild(shelf);
+  const lvl = s => [...s].reduce((a,c)=>a+(c==='U'?1:-1),0);
+  function pts(s){ const p = [[X0,Y0]]; let y = 0; [...s].forEach((c,i)=>{ y += c==='U'?1:-1; p.push([X0+(i+1)*DX, Y0-y*DY]); }); return p; }
+  function draw(){ const p = pts(seq); setA(path,{points:p.map(q=>q.join(',')).join(' ')}); const e = p[p.length-1]; setA(bunny,{x:e[0],y:e[1]-8}); }
+  function hop(c){
+    if (seq.length>=6){ seq=''; }
+    const L = lvl(seq);
+    if (c==='D' && L===0){
+      const p = pts(seq), e = p[p.length-1];
+      setA(ghost,{x1:e[0],y1:e[1],x2:e[0]+DX,y2:e[1]+DY*0.7,opacity:1}); setTimeout(()=>setA(ghost,{opacity:0}),700);
+      k.say(out,'Can’t go under the ground! ✗','bad'); return;
+    }
+    if (c==='U' && L+1 > 6-seq.length-1){ k.say(out,'Too high — can’t get back down in time ✗','bad'); return; }
+    seq += c; draw();
+    if (seq.length===6){
+      if (!found.includes(seq)){ found.push(seq); shelf.append(h('span',{class:'readout'}, seq.split('').join(' '))); }
+      k.say(out, `${seq} ✓  Found ${found.length} of 5` + (found.length===5?' — all of them!':''), found.length===5?'ok':null);
+    } else k.say(out, seq.split('').join(' ') + ' …');
+  }
+  async function play(s, me){ seq=''; draw(); for (const c of s){ if (me!==run) return; await sleep(320); hop(c); } }
+  let run = 0;
+  return { step(i){
+    const me = ++run;
+    if (i===0) return play('UUUDDD', me);
+    if (i===1){ seq=''; draw(); hop('D'); }
+    if (i===2) return (async()=>{ seq=''; draw(); for (const c of 'UDD'){ if (me!==run) return; await sleep(350); hop(c); } })();
+    if (i===3) return (async()=>{ for (const s of ['UUUDDD','UUDUDD','UUDDUD','UDUUDD','UDUDUD']){ if (me!==run) return; await play(s, me); await sleep(250); } })();
+  } };
+};
+
+/* 17 · two kings that don't attack */
+W24[17] = (box, k) => {
+  const C = 78, X0 = 30, Y0 = 16;
+  const svg = k.svg(720, 270);
+  const marks = [];
+  for (let r=0;r<3;r++){ marks.push([]); for (let c=0;c<3;c++){
+    const q = S('rect',{x:X0+c*C,y:Y0+r*C,width:C,height:C,fill:(r+c)%2?'#E7C99A':'#F8EBD3',class:'tap'},svg);
+    q.addEventListener('click',()=>put(r,c));
+    marks[r].push(S('text',{x:X0+c*C+C/2,y:Y0+r*C+C/2+14,'text-anchor':'middle','font-size':40,text:''},svg));
+  } }
+  S('rect',{x:X0,y:Y0,width:3*C,height:3*C,fill:'none',stroke:'#92400E','stroke-width':3},svg);
+  const T = { corner: S('text',{x:310,y:70,'font-size':20,fill:'#2B2340'},svg), edge: S('text',{x:310,y:115,'font-size':20,fill:'#2B2340'},svg), middle: S('text',{x:310,y:160,'font-size':20,fill:'#2B2340'},svg) };
+  const tot = S('text',{x:310,y:215,'font-size':22,fill:'#16A34A'},svg);
+  S('text',{x:310,y:30,'font-size':15,fill:'#6B6385',text:'White king on a… → safe squares for black'},svg);
+  const seen = {};
+  const r = k.row();
+  k.btn(r,'Corner', ()=>put(0,0),'alt'); k.btn(r,'Edge', ()=>put(0,1),'alt'); k.btn(r,'Middle', ()=>put(1,1),'alt');
+  const out = k.readout(k.row(),'Tap a square to put the white king there.');
+  function put(R,Cc){
+    let safe = 0;
+    for (let r=0;r<3;r++) for (let c=0;c<3;c++){
+      const m = marks[r][c];
+      if (r===R && c===Cc){ setA(m,{text:'♔',fill:'#2B2340','font-size':44}); continue; }
+      const att = Math.max(Math.abs(r-R),Math.abs(c-Cc)) <= 1;
+      if (!att) safe++;
+      setA(m,{text: att ? '✗' : '♚', fill: att ? '#E11D48' : '#16A34A', 'font-size': att ? 30 : 36});
+    }
+    const type = (R===1 && Cc===1) ? 'middle' : ((R+Cc)%2===0 ? 'corner' : 'edge');
+    seen[type] = safe;
+    const n = type==='middle' ? 1 : 4;
+    T[type].textContent = `${type}: ${safe} safe × ${n} = ${safe*n}`;
+    const all = ['corner','edge','middle'].every(t=>t in seen);
+    if (all) tot.textContent = `Total: ${seen.corner*4} + ${seen.edge*4} + 0 = ${seen.corner*4 + seen.edge*4}`;
+    k.say(out, `${safe} safe squares for the black king` + (all ? ` · total ${seen.corner*4 + seen.edge*4}` : ''), all ? 'ok' : null);
+  }
+  return { step(i){ if (i===0) put(1,1); if (i===1) put(0,0); if (i===2) put(0,1); if (i===3) put(2,2); } };
+};
+
+/* 18 · shade a slice so shaded = unshaded */
+W24[18] = (box, k) => {
+  const svg = k.svg(720, 300);
+  const cx = 160, cy = 150, U = 44;
+  const pt = (r,a) => [cx + r*Math.cos(a), cy + r*Math.sin(a)];
+  S('circle',{cx,cy,r:3*U,fill:'#fff',stroke:'#2B2340','stroke-width':3},svg);
+  const slice = S('path',{fill:'#C4B5FD',stroke:'#7C3AED','stroke-width':2},svg);
+  const mid = S('circle',{cx,cy,r:2*U,fill:'#C4B5FD',stroke:'#2B2340','stroke-width':3},svg);
+  S('circle',{cx,cy,r:U,fill:'#fff',stroke:'#2B2340','stroke-width':3},svg);
+  S('circle',{cx,cy,r:4,fill:'#2B2340'},svg);
+  const glow = S('circle',{cx,cy,r:3*U,fill:'none',stroke:'#F59E0B','stroke-width':8,opacity:0},svg);
+  const lab = S('text',{x:cx,y:cy+5,'text-anchor':'middle','font-size':14,fill:'#6B6385',text:'O'},svg);
+  const t1 = S('text',{x:360,y:80,'font-size':20,fill:'#2B2340',text:'Whole: 9π'},svg);
+  const t2 = S('text',{x:360,y:125,'font-size':20,fill:'#7C3AED'},svg);
+  const t3 = S('text',{x:360,y:170,'font-size':20,fill:'#2B2340'},svg);
+  const t4 = S('text',{x:360,y:220,'font-size':16,fill:'#6B6385',text:'middle ring 3π · outer ring 5π'},svg);
+  const r = k.row();
+  const sl = k.slider(r,'Angle BOC:', 0, 360, 6, 36, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(th){
+    const a0 = -Math.PI/2, a1 = a0 + th*Math.PI/180, big = th > 180 ? 1 : 0;
+    if (th >= 360) setA(slice,{d:`M${cx-3*U},${cy} a${3*U},${3*U} 0 1,0 ${6*U},0 a${3*U},${3*U} 0 1,0 ${-6*U},0 Z`});
+    else if (th <= 0) setA(slice,{d:''});
+    else { const [ax,ay] = pt(3*U,a0), [bx,by] = pt(3*U,a1), [cx2,cy2] = pt(2*U,a1), [dx,dy] = pt(2*U,a0);
+      setA(slice,{d:`M${ax},${ay} A${3*U},${3*U} 0 ${big},1 ${bx},${by} L${cx2},${cy2} A${2*U},${2*U} 0 ${big},0 ${dx},${dy} Z`}); }
+    const sh = 3 + 5*th/360;
+    t2.textContent = `Shaded: 3π + ${+(5*th/360).toFixed(2)}π = ${+sh.toFixed(2)}π`;
+    t3.textContent = `Unshaded: ${+(9-sh).toFixed(2)}π`;
+    const ok = Math.abs(sh - 4.5) < 1e-9;
+    k.say(out, ok ? `${th}° → shaded = unshaded = 4.5π ✓` : (sh < 4.5 ? 'Shaded is too small' : 'Shaded is too big'), ok ? 'ok' : null);
+  }
+  draw(36);
+  const pulse = el => { setA(el,{opacity:1}); setTimeout(()=>setA(el,{opacity:0}),1200); };
+  return { step(i){
+    if (i===0){ setA(glow,{r:3*U}); pulse(glow); k.say(out,'Whole circle 9π. Half = 4.5π'); }
+    if (i===1){ setA(glow,{r:2*U}); pulse(glow); sl.set(0); k.say(out,'Middle ring: 4π − π = 3π. Need 1.5π more.'); }
+    if (i===2){ setA(glow,{r:3*U}); pulse(glow); k.say(out,'Outer ring: 9π − 4π = 5π. 1.5π of 5π = 3/10'); }
+    if (i===3){ const from = sl.value; tween(1400, e=>sl.set(Math.round(lerp(from,108,e)/6)*6)); }
+  } };
+};
+
+/* ===== 2023 widgets (part A) ===== */
+const W23 = (YEARS[2023] = YEARS[2023] || {probs:[], twins:[], widgets:{}}).widgets;
+
+/* 1 · multiply before adding */
+W23[1] = (box, k) => {
+  const svg = k.svg(720, 200);
+  const L = S('text',{x:190,y:80,'text-anchor':'middle','font-size':34,fill:'#1D4ED8',class:'tap'},svg);
+  const R = S('text',{x:530,y:80,'text-anchor':'middle','font-size':34,fill:'#B45309',class:'tap'},svg);
+  S('text',{x:360,y:80,'text-anchor':'middle','font-size':34,fill:'#2B2340',text:'−'},svg);
+  const lsteps = ['(8 × 4 + 2)','(32 + 2)','34'], rsteps = ['(8 + 4 × 2)','(8 + 8)','16'];
+  let li = 0, ri = 0;
+  const msg = S('text',{x:360,y:150,'text-anchor':'middle','font-size':20,fill:'#6B6385'},svg);
+  L.addEventListener('click',()=>{ if (li<2){ li++; draw(); } });
+  R.addEventListener('click',()=>{ if (ri<2){ ri++; draw(); } });
+  const out = k.readout(k.row(),'Tap each bracket: × first, then +.');
+  function draw(){
+    L.textContent = lsteps[li]; R.textContent = rsteps[ri];
+    msg.textContent = (li===1||ri===1) ? 'Multiply first!' : '';
+    k.say(out, li===2&&ri===2 ? '34 − 16 = 18' : 'Tap each bracket: × first, then +.', li===2&&ri===2?'ok':null);
+  }
+  draw();
+  return { step(i){ if(i>=1){ li=Math.max(li,i>=2?2:1); ri=Math.max(ri,i>=2?2:1); draw(); } } };
+};
+
+/* 3 · wind chill */
+W23[3] = (box, k) => {
+  const svg = k.svg(720, 250);
+  S('rect',{x:80,y:20,width:30,height:200,rx:15,fill:'#fff',stroke:'#2B2340','stroke-width':3},svg);
+  const merc = S('rect',{x:86,width:18,rx:9,fill:'#EF4444'},svg);
+  for (let t=0;t<=40;t+=10){ const y = 210 - t*4.5; S('line',{x1:112,y1:y,x2:124,y2:y,stroke:'#2B2340'},svg); S('text',{x:130,y:y+5,'font-size':14,fill:'#6B6385',text:t+'°'},svg); }
+  const flags = S('text',{x:420,y:110,'text-anchor':'middle','font-size':60,text:'🌬️'},svg);
+  const lab = S('text',{x:420,y:190,'text-anchor':'middle','font-size':20,fill:'#2B2340'},svg);
+  const r = k.row();
+  const sl = k.slider(r,'Wind (mph):', 0, 30, 1, 0, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(w){
+    const c = 36 - 0.7*w;
+    setA(merc,{y:210 - c*4.5, height: c*4.5});
+    lab.textContent = `feels like ${+c.toFixed(1)}°F`;
+    k.say(out, `36 − 0.7 × ${w} = ${+c.toFixed(1)}` + (w===18 ? ' → closest 23' : ''), w===18?'ok':null);
+  }
+  draw(0);
+  return { step(i){ if(i===1) sl.set(18); } };
+};
+
+/* 5 · capture-recapture */
+W23[5] = (box, k) => {
+  const svg = k.svg(720, 260);
+  const g = S('g',{},svg);
+  for (let i=0;i<36;i++){ const t = i%6===0; S('text',{x:30+(i%12)*30,y:50+Math.floor(i/12)*32,'font-size':22,text: t?'🐟':'🐠'},g); }
+  S('text',{x:200,y:170,'text-anchor':'middle','font-size':15,fill:'#6B6385',text:'sample: 1 trout 🐟 in every 6 fish'},svg);
+  const big = S('text',{x:560,y:110,'text-anchor':'middle','font-size':26,fill:'#1D4ED8'},svg);
+  const r = k.row();
+  k.slider(r,'Lake trout:', 50, 250, 50, 50, v=>{ big.textContent = `${v} × 6 = ${v*6} fish`; k.say(out, v===250?'250 trout → 1500 fish':'Each trout stands for 6 fish', v===250?'ok':null); });
+  const out = k.readout(k.row(),'30 of 180 = 1 of 6');
+  big.textContent = '50 × 6 = 300 fish';
+  return {};
+};
+
+/* 6 · powers with 2, 0, 2, 3 */
+W23[6] = (box, k) => {
+  const svg = k.svg(720, 220);
+  const arr = [2,0,2,3];
+  const pos = [[150,130,48],[205,85,28],[430,130,48],[485,85,28]];
+  const boxes = pos.map(([x,y,fs],i)=>{ const g = S('g',{class:'tap'},svg); S('rect',{x:x-fs*0.6,y:y-fs,width:fs*1.2,height:fs*1.25,rx:8,fill:'#fff',stroke:'#3B82F6','stroke-width':3},g); const t = S('text',{x,y:y,'text-anchor':'middle','font-size':fs,fill:'#1D4ED8'},g); g.addEventListener('click',()=>swap(i)); return t; });
+  S('text',{x:318,y:130,'text-anchor':'middle','font-size':40,fill:'#2B2340',text:'×'},svg);
+  const val = S('text',{x:360,y:200,'text-anchor':'middle','font-size':22,fill:'#2B2340'},svg);
+  let sel = -1, best = 0;
+  const out = k.readout(k.row(),'Tap two boxes to swap digits.');
+  function swap(i){ if (sel<0){ sel=i; return; } [arr[sel],arr[i]]=[arr[i],arr[sel]]; sel=-1; draw(); }
+  function draw(){
+    boxes.forEach((t,i)=>t.textContent = arr[i]);
+    const v = Math.pow(arr[0],arr[1]) * Math.pow(arr[2],arr[3]);
+    best = Math.max(best, v);
+    const sup = n => `<tspan baseline-shift="super" font-size="14">${n}</tspan>`;
+    val.innerHTML = `${arr[0]}${sup(arr[1])} × ${arr[2]}${sup(arr[3])} = ${Math.pow(arr[0],arr[1])} × ${Math.pow(arr[2],arr[3])} = ${v}`;
+    k.say(out, `Best so far: ${best}` + (best===9 ? ' — that\'s the max!' : ''), best===9?'ok':null);
+  }
+  draw();
+  return {};
+};
+
+/* 10 · eating the pie */
+W23[10] = (box, k) => {
+  const svg = k.svg(720, 260);
+  const C = [180,130], R = 100;
+  const slice = (a0,a1,fill)=>{ const p = a=>[C[0]+R*Math.cos(a-Math.PI/2), C[1]+R*Math.sin(a-Math.PI/2)]; const [x0,y0]=p(a0),[x1,y1]=p(a1); return S('path',{d:`M${C[0]},${C[1]} L${x0},${y0} A${R},${R} 0 ${a1-a0>Math.PI?1:0} 1 ${x1},${y1} Z`,fill,stroke:'#fff','stroke-width':2},svg); };
+  for (let i=0;i<12;i++) slice(i*Math.PI/6,(i+1)*Math.PI/6,'#FDBA74');
+  const eaten = S('g',{},svg);
+  const t = S('text',{x:500,y:120,'text-anchor':'middle','font-size':22,fill:'#2B2340'},svg);
+  let st = 0;
+  const steps = [[0,3,'Harold eats a quarter','#94A3B8','3/4 left'],[3,6,'moose eats a third of the rest','#A78BFA','1/2 left'],[6,8,'porcupine eats a third of the rest','#F472B6','1/3 left']];
+  const r = k.row();
+  const b = k.btn(r,'🍽️ Next eater', ()=>next(),'o');
+  const out = k.readout(k.row(),'The pie has 12 slices.');
+  function next(){
+    if (st>=3) return;
+    const [a,z,txt,col,left] = steps[st];
+    for (let i=a;i<z;i++){ const p = slice(i*Math.PI/6,(i+1)*Math.PI/6,col); eaten.appendChild(p); }
+    t.textContent = txt; st++;
+    k.say(out, `${12 - steps[st-1][1]} of 12 slices left = ${left}`, st===3?'ok':null);
+    if (st===3) b.disabled = true;
+  }
+  return { step(i){ while (st < Math.min(i+1,3)) next(); } };
+};
+
+/* 11 · rover speed estimate */
+W23[11] = (box, k) => {
+  const svg = k.svg(720, 220);
+  S('text',{x:60,y:110,'font-size':44,text:'🌍'},svg); S('text',{x:620,y:110,'font-size':44,text:'🔴'},svg);
+  const rover = S('text',{x:110,y:100,'font-size':30,text:'🚀'},svg);
+  S('line',{x1:110,y1:110,x2:610,y2:110,stroke:'#CBD5E1','stroke-width':3,'stroke-dasharray':'8 8'},svg);
+  const t1 = S('text',{x:360,y:160,'text-anchor':'middle','font-size':18,fill:'#2B2340'},svg);
+  const t2 = S('text',{x:360,y:195,'text-anchor':'middle','font-size':18,fill:'#16A34A'},svg);
+  const r = k.row();
+  k.btn(r,'⏱️ Hours in 6.5 months', ()=>{ t1.textContent = '6.5 × 30 days × 24 h ≈ 4,680 hours'; },'p');
+  k.btn(r,'≈ Round & divide', ()=>{ t2.textContent = '300,000,000 ÷ 5,000 = 60,000 mph'; tween(1200,t=>setA(rover,{x:110+500*t})); k.say(out,'About 60,000 mph','ok'); },'g');
+  const out = k.readout(k.row(),'speed = miles ÷ hours');
+  return {};
+};
+
+/* ===== 2023 widgets (part B) ===== */
+
+/* 13 · water and repair stations */
+W23[13] = (box, k) => {
+  const svg = k.svg(720, 230);
+  const X0 = 40, Wd = 640;
+  S('line',{x1:X0,y1:110,x2:X0+Wd,y2:110,stroke:'#2B2340','stroke-width':4},svg);
+  S('text',{x:X0,y:140,'text-anchor':'middle','font-size':14,fill:'#6B6385',text:'start'},svg);
+  S('text',{x:X0+Wd,y:140,'text-anchor':'middle','font-size':14,fill:'#6B6385',text:'finish'},svg);
+  for (let i=1;i<=7;i++){ const x = X0+Wd*i/8; S('text',{x,y:95,'text-anchor':'middle','font-size':22,text:'💧'},svg); S('text',{x,y:68,'text-anchor':'middle','font-size':12,fill:'#3B82F6',text:'W'+i},svg); }
+  for (let i=1;i<=2;i++){ const x = X0+Wd*i/3; S('text',{x,y:138,'text-anchor':'middle','font-size':22,text:'🔧'},svg); S('text',{x,y:162,'text-anchor':'middle','font-size':12,fill:'#B45309',text:'R'+i},svg); }
+  const gap = S('rect',{x:X0+Wd/3,y:100,width:Wd*(3/8-1/3),height:20,fill:'rgba(236,72,153,.5)'},svg);
+  const gl = S('text',{x:X0+Wd*0.354,y:200,'text-anchor':'middle','font-size':16,fill:'#BE185D'},svg);
+  const r = k.row();
+  const sl = k.slider(r,'Race length (mi):', 24, 96, 24, 24, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(L){
+    const g = L*(3/8-1/3);
+    gl.textContent = `R1 → W3 = ${+g.toFixed(2)} mi`;
+    k.say(out, `${L} × (3/8 − 1/3) = ${L} × 1/24 = ${+g.toFixed(2)}` + (g===2 ? ' ✓' : ''), g===2?'ok':null);
+  }
+  draw(24);
+  return { step(i){ if(i===3) sl.set(48); } };
+};
+
+/* 14 · stamps to $7.10 */
+W23[14] = (box, k) => {
+  const svg = k.svg(720, 220);
+  const g = S('g',{},svg);
+  const r = k.row();
+  const sl = k.slider(r,'25¢ stamps:', 12, 20, 1, 20, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  k.hint('Use as few 25¢ as possible, then fill with 5¢ and 10¢ (20 of each).');
+  function draw(c){
+    g.innerHTML = '';
+    const rest = 710 - 25*c;
+    let best = null;
+    for (let b=Math.min(20,Math.floor(rest/10)); b>=0; b--){ const a = (rest - 10*b)/5; if (Number.isInteger(a) && a>=0 && a<=20){ if (!best || a+b > best[0]+best[1]) best=[a,b]; } }
+    const col = [['25¢','#7C3AED',c],['10¢','#16A34A',best?best[1]:0],['5¢','#F59E0B',best?best[0]:0]];
+    col.forEach(([n,cl,cnt],i)=>{ S('text',{x:20,y:50+i*60,'font-size':18,fill:cl,text:n},g); for (let j=0;j<cnt;j++) S('rect',{x:70+j*30,y:30+i*60,width:24,height:30,rx:4,fill:cl,opacity:.3,stroke:cl},g); S('text',{x:690,y:52+i*60,'text-anchor':'end','font-size':18,fill:cl,text:cnt},g); });
+    if (!best) return k.say(out, `${c} × 25¢ leaves ${rest}¢ — can't make it with 20 of each ✗`, 'bad');
+    const tot = c + best[0] + best[1];
+    k.say(out, `${c} + ${best[1]} + ${best[0]} = ${tot} stamps` + (tot===55 ? ' (most!)' : ''), tot===55?'ok':null);
+  }
+  draw(20);
+  return { step(i){ if(i===2) sl.set(17); } };
+};
+
+/* 15 · the detour */
+W23[15] = (box, k) => {
+  const svg = k.svg(720, 220);
+  const B = 60, X0 = 40;
+  for (let i=0;i<10;i++) S('rect',{x:X0+i*B+4,y:120,width:B-8,height:30,rx:4,fill: i===5?'#FCA5A5':'#E5E7EB'},svg);
+  S('path',{d:`M${X0+5*B},115 L${X0+5*B},60 L${X0+6*B},60 L${X0+6*B},115`,fill:'none',stroke:'#E11D48','stroke-width':3,'stroke-dasharray':'6 4'},svg);
+  S('text',{x:X0+10*B,y:110,'text-anchor':'end','font-size':20,text:'🏫'},svg);
+  const kid = S('text',{x:X0,y:110,'font-size':26,'text-anchor':'middle',text:'🚶'},svg);
+  const clock = S('text',{x:360,y:30,'text-anchor':'middle','font-size':18,fill:'#2B2340'},svg);
+  const r = k.row();
+  const sl = k.slider(r,'Speed after detour (mph):', 3, 5, 0.1, 3, v=>{});
+  k.btn(r,'▶ Walk', ()=>walk(),'g');
+  const out = k.readout(k.row(),'Each block = 0.05 mile. Normal pace: 1 block per minute (3 mph).');
+  async function walk(){
+    const v = sl.value; // mph, block = 0.05 mi
+    const minPerBlock = 0.05 / v * 60;
+    const path = [];  // [x,y,minutes]
+    let t = 0;
+    for (let i=0;i<5;i++){ path.push([X0+(i+1)*B,110,t+=1]); }
+    path.push([X0+5*B,55,t+=minPerBlock]); path.push([X0+6*B,55,t+=minPerBlock]); path.push([X0+6*B,110,t+=minPerBlock]);
+    for (let i=6;i<10;i++) path.push([X0+(i+1)*B,110,t+=minPerBlock]);
+    let prev = [X0,110,0];
+    for (const p of path){ const a = prev; await tween(140,e=>{ setA(kid,{x:lerp(a[0],p[0],e),y:lerp(a[1],p[1],e)}); clock.textContent = (lerp(a[2],p[2],e)).toFixed(1)+' min'; }); prev = p; }
+    const ok = Math.abs(t-10) < 0.05;
+    k.say(out, ok ? `Arrived at 10 min exactly with ${v} mph ✓` : `Arrived at ${t.toFixed(2)} min (need 10)`, ok?'ok':(t>10?'bad':null));
+  }
+  return {};
+};
+
+/* 18 · grasshopper jumps */
+W23[18] = (box, k) => {
+  const svg = k.svg(720, 200);
+  const t1 = S('text',{x:360,y:60,'text-anchor':'middle','font-size':24,fill:'#2B2340'},svg);
+  const t2 = S('text',{x:360,y:110,'text-anchor':'middle','font-size':22},svg);
+  const t3 = S('text',{x:360,y:160,'text-anchor':'middle','font-size':20,fill:'#16A34A'},svg);
+  const r = k.row();
+  const sl = k.slider(r,'Left jumps (−3):', 0, 9, 1, 0, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(b){
+    const need = 2023 + 3*b, a = need/5, ok = Number.isInteger(a);
+    t1.textContent = `5 × right − 3 × ${b} = 2023`;
+    setA(t2,{text: ok ? `right jumps = ${need} ÷ 5 = ${a}` : `${need} ÷ 5 is not whole ✗`, fill: ok?'#1D4ED8':'#E11D48'});
+    t3.textContent = ok ? `total jumps = ${a} + ${b} = ${a+b}` : '';
+    k.say(out, ok ? `${a+b} jumps` + (b===4 ? ' — fewest!' : '') : 'Try another number of left jumps.', ok&&b===4?'ok':null);
+  }
+  draw(0);
+  return { step(i){ if(i===2) sl.set(4); } };
+};
+
+/* 20 · add two numbers to the list */
+W23[20] = (box, k) => {
+  const svg = k.svg(720, 220);
+  const g = S('g',{},svg);
+  let x = 7, y = 53;
+  const r = k.row();
+  k.slider(r,'small one:', 0, 10, 1, 7, v=>{ x=v; draw(); });
+  k.slider(r,'big one:', 28, 60, 1, 53, v=>{ y=v; draw(); });
+  const out = k.readout(k.row(),'');
+  function draw(){
+    g.innerHTML = '';
+    const L = [3,3,8,11,28,x,y].sort((a,b)=>a-b);
+    L.forEach((v,i)=>{ const add = (v===x||v===y) && ![3,3,8,11,28].includes(v) ; S('rect',{x:30+i*95,y:30,width:84,height:60,rx:12,fill: i===3?'#EDE9FE':'#fff',stroke: i===3?'#8B5CF6':'#CBD5E1','stroke-width':3},g); S('text',{x:72+i*95,y:70,'text-anchor':'middle','font-size':24,fill:'#2B2340',text:v},g); });
+    const cnt = {}; L.forEach(v=>cnt[v]=(cnt[v]||0)+1);
+    const maxc = Math.max(...Object.values(cnt)), modes = Object.keys(cnt).filter(k2=>cnt[k2]===maxc);
+    const range = L[6]-L[0], med = L[3];
+    const ok = range===50 && med===8 && modes.length===1 && modes[0]==='3';
+    S('text',{x:360,y:140,'text-anchor':'middle','font-size':18,fill:'#2B2340',text:`range ${range} (need 50) · median ${med} (need 8) · mode ${modes.join(',')} (need 3)`},g);
+    k.say(out, ok ? `Works! ${x} + ${y} = ${x+y}` : 'Keep all three rules.', ok ? 'ok' : 'bad');
+  }
+  draw();
+  return {};
+};
+
+/* 21 · three groups with equal sums */
+W23[21] = (box, k) => {
+  const svg = k.svg(720, 260);
+  const cols = ['#3B82F6','#F59E0B','#16A34A'], fills = ['#DBEAFE','#FEF3C7','#DCFCE7'];
+  const grp = Array(9).fill(-1);
+  const cards = [];
+  for (let n=1;n<=9;n++){
+    const g = S('g',{class:'tap',transform:`translate(${20+(n-1)*76},30)`},svg);
+    const rc = S('rect',{width:66,height:86,rx:12,fill:'#fff',stroke:'#CBD5E1','stroke-width':3},g);
+    S('text',{x:33,y:56,'text-anchor':'middle','font-size':32,fill:'#2B2340',text:n},g);
+    g.addEventListener('click',()=>{ grp[n-1] = ((grp[n-1]+2)%4)-1; draw(); });
+    cards.push(rc);
+  }
+  const sums = cols.map((c,i)=>S('text',{x:120+i*240,y:170,'text-anchor':'middle','font-size':20,fill:c},svg));
+  const found = new Set();
+  const fl = S('text',{x:360,y:225,'text-anchor':'middle','font-size':16,fill:'#16A34A'},svg);
+  const out = k.readout(k.row(),'Tap cards to colour them into 3 groups of 3.');
+  k.hint('1 + 2 + … + 9 = 45, so each group must add to 15.');
+  function draw(){
+    cards.forEach((c,i)=>setA(c,{fill: grp[i]<0?'#fff':fills[grp[i]], stroke: grp[i]<0?'#CBD5E1':cols[grp[i]]}));
+    const s = [0,0,0], n = [0,0,0];
+    grp.forEach((g,i)=>{ if (g>=0){ s[g]+=i+1; n[g]++; } });
+    sums.forEach((t,i)=>t.textContent = `group ${i+1}: ${s[i]}`);
+    const ok = n.every(x=>x===3) && s.every(x=>x===15);
+    if (ok){ const key = [0,1,2].map(g=>grp.map((x,i)=>x===g?i+1:0).filter(Boolean).join('')).sort().join('|'); found.add(key); }
+    fl.textContent = found.size ? 'Found: ' + [...found].map(f=>f.split('|').map(x=>'{'+x.split('').join(',')+'}').join(' ')).join('   ') : '';
+    k.say(out, ok ? `All 15! Ways found: ${found.size} (there are 2)` : 'Each group of 3 must add to 15.', ok?'ok':null);
+  }
+  draw();
+  return {};
+};
+
+/* 22 · multiply the two before */
+W23[22] = (box, k) => {
+  const svg = k.svg(720, 200);
+  const g = S('g',{},svg);
+  let a = 2, b = 2;
+  const r = k.row();
+  k.slider(r,'1st term:', 1, 10, 1, 2, v=>{ a=v; draw(); });
+  k.slider(r,'2nd term:', 1, 10, 1, 2, v=>{ b=v; draw(); });
+  const out = k.readout(k.row(),'');
+  function draw(){
+    g.innerHTML = '';
+    const t = [a,b]; while (t.length<6) t.push(t[t.length-1]*t[t.length-2]);
+    t.forEach((v,i)=>{ S('rect',{x:20+i*116,y:50,width:106,height:70,rx:12,fill: i===5?'#FEF3C7':'#fff',stroke: i===5?'#F59E0B':'#CBD5E1','stroke-width':3},g); S('text',{x:73+i*116,y:94,'text-anchor':'middle','font-size': v>99999?16:22,fill:'#2B2340',text:v},g); if (i>=2) S('text',{x:73+i*116,y:40,'text-anchor':'middle','font-size':12,fill:'#6B6385',text:'× of 2 before'},g); });
+    k.say(out, t[5]===4000 ? `6th term = 4000 ✓  first term = ${a}` : `6th term = ${t[5]} (want 4000)`, t[5]===4000?'ok':null);
+  }
+  draw();
+  return {};
+};
+
+/* 25 · equally spaced numbers */
+W23[25] = (box, k) => {
+  const svg = k.svg(720, 220);
+  const X = v => 30 + v*2.6;
+  S('line',{x1:X(0),y1:120,x2:X(252),y2:120,stroke:'#2B2340','stroke-width':3},svg);
+  [[1,10,'#3B82F6','a₁'],[13,20,'#F59E0B','a₂'],[241,250,'#16A34A','a₁₅']].forEach(([lo,hi,c,n])=>{ S('rect',{x:X(lo),y:108,width:Math.max(6,X(hi)-X(lo)),height:24,fill:c,opacity:.3},svg); S('text',{x:(X(lo)+X(hi))/2,y:100,'text-anchor':'middle','font-size':13,fill:c,text:n},svg); });
+  const dots = S('g',{},svg);
+  let a1 = 3, d = 17;
+  const r = k.row();
+  k.slider(r,'a₁:', 1, 10, 1, 3, v=>{ a1=v; draw(); });
+  k.slider(r,'gap:', 3, 19, 1, 17, v=>{ d=v; draw(); });
+  const out = k.readout(k.row(),'');
+  function draw(){
+    dots.innerHTML = '';
+    for (let i=0;i<15;i++){ const v = a1 + i*d; if (v<=260) S('circle',{cx:X(v),cy:120,r:6,fill: i===13?'#EC4899':'#2B2340'},dots); }
+    const a2 = a1+d, a15 = a1+14*d, a14 = a1+13*d;
+    const ok = a2>=13 && a2<=20 && a15>=241 && a15<=250;
+    k.say(out, `a₂ = ${a2}, a₁₅ = ${a15}` + (ok ? ` ✓  a₁₄ = ${a14} → digit sum ${String(a14).split('').reduce((s,c)=>s+ +c,0)}` : ' ✗'), ok?'ok':'bad');
+  }
+  draw();
+  return {};
+};
+
+/* ===== 2022 widgets (part A) ===== */
+const W22 = (YEARS[2022] = YEARS[2022] || {probs:[], twins:[], widgets:{}}).widgets;
+
+/* 2 · made-up operations */
+W22[2] = (box, k) => {
+  const svg = k.svg(720, 220);
+  const t = [S('text',{x:360,y:60,'text-anchor':'middle','font-size':26,fill:'#1D4ED8'},svg), S('text',{x:360,y:115,'text-anchor':'middle','font-size':26,fill:'#B45309'},svg), S('text',{x:360,y:170,'text-anchor':'middle','font-size':26,fill:'#16A34A'},svg)];
+  let st = 0;
+  const lines = ['5 ◆ 3 = 5 × 5 − 3 × 3 = 25 − 9 = 16','16 ★ 6 = (16 − 6) × (16 − 6)','= 10 × 10 = 100'];
+  const r = k.row();
+  const b = k.btn(r,'Next ▶', ()=>{ if (st<3){ t[st].textContent = lines[st]; st++; } if (st===3){ b.disabled = true; k.say(out,'(5 ◆ 3) ★ 6 = 100','ok'); } },'g');
+  const out = k.readout(k.row(),'◆: square each, subtract · ★: subtract, then square');
+  return { step(i){ while (st < Math.min(i+1,3)) b.click(); } };
+};
+
+/* 3 · triples with product 100 */
+W22[3] = (box, k) => {
+  const svg = k.svg(720, 250);
+  const divs = [1,2,4,5,10,20,25,50,100];
+  const pick = [];
+  const found = new Set();
+  const chips = divs.map((d,i)=>{ const g = S('g',{class:'tap',transform:`translate(${30+i*75},30)`},svg); const r = S('rect',{width:64,height:50,rx:10,fill:'#fff',stroke:'#3B82F6','stroke-width':3},g); S('text',{x:32,y:33,'text-anchor':'middle','font-size':20,fill:'#1D4ED8',text:d},g); g.addEventListener('click',()=>tap(d,r)); return {d,r}; });
+  const t = S('text',{x:360,y:130,'text-anchor':'middle','font-size':24,fill:'#2B2340'},svg);
+  const fl = S('text',{x:360,y:190,'text-anchor':'middle','font-size':18,fill:'#16A34A'},svg);
+  const out = k.readout(k.row(),'Tap 3 different numbers (smallest first) that multiply to 100.');
+  function tap(d,r){
+    if (pick.includes(d)) return;
+    pick.push(d); setA(r,{fill:'#DBEAFE'});
+    if (pick.length===3){
+      const [a,b,c] = pick.slice().sort((x,y)=>x-y), p = a*b*c;
+      t.textContent = `${a} × ${b} × ${c} = ${p}`;
+      if (p===100){ found.add(`${a}·${b}·${c}`); }
+      fl.textContent = [...found].join('   ');
+      k.say(out, p===100 ? `Yes! Found ${found.size} of 4` : `${p} ≠ 100`, p===100?'ok':'bad');
+      pick.length = 0; setTimeout(()=>chips.forEach(c=>setA(c.r,{fill:'#fff'})), 600);
+    }
+  }
+  return {};
+};
+
+/* 5 · ages */
+W22[5] = (box, k) => {
+  const svg = k.svg(720, 230);
+  const g = S('g',{},svg);
+  const r = k.row();
+  k.slider(r,'Anna is now:', 10, 16, 1, 12, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(a){
+    g.innerHTML = '';
+    const people = [['Bella',11,'#EC4899','👧'],['kitten',5,'#F59E0B','🐱'],['Anna',a,'#3B82F6','👧']];
+    people.forEach(([n,age,c,e],i)=>{ S('text',{x:80+i*230,y:80,'text-anchor':'middle','font-size':44,text:e},g); S('text',{x:80+i*230,y:130,'text-anchor':'middle','font-size':20,fill:c,text:`${n}: ${age}`},g); });
+    const tot = 16 + a;
+    k.say(out, `11 + 5 + ${a} = ${tot}` + (tot===30 ? ` ✓  Anna is ${a-11} years older` : ' (need 30)'), tot===30?'ok':null);
+  }
+  draw(12);
+  return {};
+};
+
+/* 6 · evenly spaced, biggest = 4 × smallest */
+W22[6] = (box, k) => {
+  const svg = k.svg(720, 200);
+  const X = v => 40 + v*24;
+  S('line',{x1:X(0),y1:110,x2:X(27),y2:110,stroke:'#2B2340','stroke-width':3},svg);
+  for (let v=0;v<=27;v+=3) S('text',{x:X(v),y:140,'text-anchor':'middle','font-size':13,fill:'#6B6385',text:v},svg);
+  const d = [0,1,2].map(i=>S('circle',{cy:110,r:12,fill:['#3B82F6','#8B5CF6','#F59E0B'][i]},svg));
+  const lab = [0,1,2].map(()=>S('text',{y:88,'text-anchor':'middle','font-size':16,fill:'#2B2340'},svg));
+  const r = k.row();
+  k.slider(r,'smallest:', 1, 14, 1, 3, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(a){
+    const v = [a, 15, 30-a];
+    v.forEach((x,i)=>{ setA(d[i],{cx:X(x)}); setA(lab[i],{x:X(x),text:x}); });
+    const ok = 30-a === 4*a;
+    k.say(out, `largest ${30-a} vs 4 × ${a} = ${4*a}` + (ok?' ✓':''), ok?'ok':null);
+  }
+  draw(3);
+  return {};
+};
+
+/* 7 · download time */
+W22[7] = (box, k) => {
+  const svg = k.svg(720, 200);
+  const bar = S('rect',{x:40,y:70,height:40,rx:10,fill:'#3B82F6',width:0},svg);
+  S('rect',{x:40,y:70,width:640,height:40,rx:10,fill:'none',stroke:'#2B2340','stroke-width':2},svg);
+  const t = S('text',{x:360,y:150,'text-anchor':'middle','font-size':20,fill:'#2B2340'},svg);
+  const t0 = S('text',{x:360,y:50,'text-anchor':'middle','font-size':18,fill:'#6B6385',text:'🎵 4.2 MB = 4.2 × 8000 = 33,600 kilobits'},svg);
+  const r = k.row();
+  k.btn(r,'⬇️ Download at 56 kb/s', async ()=>{ await tween(2500, e=>{ setA(bar,{width:640*e}); t.textContent = `${Math.round(e*600)} s`; }); k.say(out,'33,600 ÷ 56 = 600 seconds = 10 minutes','ok'); },'g');
+  const out = k.readout(k.row(),'');
+  return {};
+};
+
+/* 8 · telescoping product */
+W22[8] = (box, k) => {
+  const svg = k.svg(720, 200);
+  const g = S('g',{},svg);
+  const fr = [];
+  for (let i=1;i<=20;i++) fr.push(i);
+  fr.forEach((n,i)=>{ const x = 28 + i*34; const gg = S('g',{},g); svgFrac(gg, x, 80, n, n+2, 14, '#2B2340'); fr[i] = {n, gg}; });
+  const t = S('text',{x:360,y:160,'text-anchor':'middle','font-size':20,fill:'#2B2340'},svg);
+  const r = k.row();
+  k.btn(r,'✂️ Cancel matching numbers', async ()=>{
+    for (const f of fr){ if (f.n>=3){ f.gg.style.transition='opacity .3s'; f.gg.style.opacity=.15; await sleep(60); } }
+    t.textContent = 'Left: 1 × 2 on top, 21 × 22 on the bottom';
+    k.say(out,'(1 × 2) ÷ (21 × 22) = 2/462 = 1/231','ok');
+  },'p');
+  const out = k.readout(k.row(),'Each top number 3…20 also appears on a bottom.');
+  return {};
+};
+
+/* 9 · cooling cup */
+W22[9] = (box, k) => {
+  const svg = k.svg(720, 250);
+  const Y = T => 220 - (T-60)*1.2;
+  S('line',{x1:60,y1:Y(68),x2:680,y2:Y(68),stroke:'#94A3B8','stroke-width':2,'stroke-dasharray':'6 5'},svg);
+  S('text',{x:684,y:Y(68)+5,'font-size':13,fill:'#64748B',text:'room 68°'},svg);
+  const pts = [[0,212],[5,140],[10,104],[15,86]];
+  const g = S('g',{},svg);
+  let st = 0;
+  const r = k.row();
+  const b = k.btn(r,'⏱️ +5 minutes', ()=>next(),'o');
+  const out = k.readout(k.row(),'Gap to room = 144°. It halves every 5 minutes.');
+  function next(){
+    if (st>=3) return; st++;
+    g.innerHTML = '';
+    pts.slice(0,st+1).forEach(([m,T],i)=>{ const x = 80 + m*36; S('rect',{x:x-14,y:Y(T),width:28,height:Y(68)-Y(T),fill:'rgba(239,68,68,.35)'},g); S('text',{x,y:Y(T)-8,'text-anchor':'middle','font-size':15,fill:'#B91C1C',text:T+'°'},g); S('text',{x,y:240,'text-anchor':'middle','font-size':13,fill:'#6B6385',text:m+' min'},g); });
+    const gap = 144/Math.pow(2,st);
+    k.say(out, `gap ${gap}° → water ${68+gap}°`, st===3?'ok':null);
+    if (st===3) b.disabled = true;
+  }
+  return { step(i){ while (st < Math.min(i,3)) next(); } };
+};
+
+/* 11 · donkey bites */
+W22[11] = (box, k) => {
+  const svg = k.svg(720, 200);
+  const g = S('g',{},svg);
+  let bites = 0;
+  const r = k.row();
+  const b = k.btn(r,'🫏 Bite!', ()=>{ if (bites<9){ bites++; draw(); } },'o');
+  const out = k.readout(k.row(),'');
+  function draw(){
+    g.innerHTML = '';
+    const pieces = bites+1, gaps = bites;
+    const total = 17 + 3*bites, W = 660, u = W/44;
+    let x = 30;
+    const pl = 17/pieces;
+    for (let i=0;i<pieces;i++){ S('rect',{x,y:70,width:pl*u,height:30,rx:6,fill:'#FDE68A',stroke:'#D97706','stroke-width':2},g); x += pl*u; if (i<gaps){ S('rect',{x,y:70,width:3*u,height:30,fill:'none',stroke:'#E11D48','stroke-dasharray':'4 3'},g); x += 3*u; } }
+    k.say(out, `${pieces} piece${pieces>1?'s':''} · ${bites} bite${bites===1?'':'s'} · eaten ${3*bites} in` + (pieces===10 ? ` → original 17 + 27 = 44` : ''), pieces===10?'ok':null);
+  }
+  draw();
+  return {};
+};
+
+/* 12 · spinners make a square? */
+W22[12] = (box, k) => {
+  const svg = k.svg(720, 280, 600);
+  const U = 70, OX = 150, OY = 40;
+  const sq = new Set([64,81]);
+  for (let i=0;i<4;i++){ S('text',{x:OX+i*U+U/2,y:OY-10,'text-anchor':'middle','font-size':15,fill:'#6B6385',text:i+1},svg); S('text',{x:OX-20,y:OY+i*U+U/2+5,'text-anchor':'middle','font-size':15,fill:'#6B6385',text:i+5},svg); }
+  const cells = [];
+  for (let a=5;a<=8;a++) for (let b=1;b<=4;b++){
+    const n = 10*a+b, g = S('g',{class:'tap'},svg);
+    const r = S('rect',{x:OX+(b-1)*U,y:OY+(a-5)*U,width:U-4,height:U-4,rx:10,fill:'#fff',stroke:'#CBD5E1','stroke-width':2},g);
+    S('text',{x:OX+(b-1)*U+U/2-2,y:OY+(a-5)*U+U/2+6,'text-anchor':'middle','font-size':20,fill:'#2B2340',text:n},g);
+    g.addEventListener('click',()=>{ setA(r,{fill: sq.has(n)?'#DCFCE7':'#FFE4E6', stroke: sq.has(n)?'#16A34A':'#E11D48'}); k.say(out, sq.has(n) ? `${n} = ${Math.sqrt(n)} × ${Math.sqrt(n)} ✓` : `${n} is not a square`, sq.has(n)?'ok':'bad'); });
+    cells.push({n,r});
+  }
+  const r = k.row();
+  k.btn(r,'Check all 16', ()=>{ cells.forEach(c=>setA(c.r,{fill: sq.has(c.n)?'#DCFCE7':'#FFE4E6', stroke: sq.has(c.n)?'#16A34A':'#E11D48'})); k.say(out,'64 and 81 → 2 of 16 = 1/8','ok'); },'g');
+  const out = k.readout(k.row(),'Tap a number: is it a perfect square?');
+  return {};
+};
+
+/* 13 · fill the blank */
+W22[13] = (box, k) => {
+  const svg = k.svg(720, 220);
+  const g = S('g',{},svg);
+  const found = new Set();
+  const r = k.row();
+  k.slider(r,'smaller number:', 1, 12, 1, 1, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(x){
+    g.innerHTML = '';
+    const y = 28 - x, blank = y - 2*x;
+    S('text',{x:360,y:70,'text-anchor':'middle','font-size':24,fill:'#2B2340',text:`${x} + ${y} = 28`},g);
+    S('text',{x:360,y:130,'text-anchor':'middle','font-size':24,fill: blank>0?'#16A34A':'#E11D48',text:`${y} = 2 × ${x} + ${blank}`},g);
+    if (blank>0) found.add(blank);
+    k.say(out, blank>0 ? `blank = ${blank} ✓  (found ${found.size} so far)` : `blank = ${blank} is not positive ✗`, blank>0?'ok':'bad');
+  }
+  draw(1);
+  return {};
+};
+
+/* ===== 2022 widgets (part B) ===== */
+
+/* 14 · BEEKEEPER with no two E's together */
+W22[14] = (box, k) => {
+  const svg = k.svg(720, 220);
+  const slots = [];
+  for (let i=0;i<9;i++){ const x = 30+i*74; slots.push({r:S('rect',{x,y:60,width:64,height:70,rx:12,fill:'#fff',stroke:'#CBD5E1','stroke-width':3},svg), t:S('text',{x:x+32,y:107,'text-anchor':'middle','font-size':32,fill:'#2B2340',text:''},svg)}); }
+  const r = k.row();
+  k.btn(r,'Place the 5 E’s', ()=>{ [0,2,4,6,8].forEach(i=>{ slots[i].t.textContent='E'; setA(slots[i].r,{fill:'#FEF3C7',stroke:'#F59E0B'}); }); k.say(out,'5 E’s with gaps need spots 1, 3, 5, 7, 9 — the only way!'); },'o');
+  k.btn(r,'🔀 Shuffle B K P R', ()=>{ const L = shuffle(['B','K','P','R']); [1,3,5,7].forEach((i,j)=>{ slots[i].t.textContent=L[j]; setA(slots[i].r,{fill:'#DBEAFE',stroke:'#3B82F6'}); }); k.say(out,'B, K, P, R can go in 4 × 3 × 2 × 1 = 24 orders','ok'); },'g');
+  const out = k.readout(k.row(),'9 letters: 5 E’s + B, K, P, R');
+  return {};
+};
+
+/* 16 · averages of neighbours */
+W22[16] = (box, k) => {
+  const svg = k.svg(720, 230);
+  const pairs = [['a + b','42','#3B82F6'],['b + c','52','#F59E0B'],['c + d','60','#16A34A']];
+  pairs.forEach(([e,v,c],i)=>{ S('rect',{x:30+i*230,y:30,width:200,height:60,rx:12,fill:'#fff',stroke:c,'stroke-width':3},svg); S('text',{x:130+i*230,y:68,'text-anchor':'middle','font-size':22,fill:c,text:`${e} = ${v}`},svg); });
+  const t = S('text',{x:360,y:150,'text-anchor':'middle','font-size':22,fill:'#2B2340'},svg);
+  const t2 = S('text',{x:360,y:195,'text-anchor':'middle','font-size':22,fill:'#16A34A'},svg);
+  const r = k.row();
+  k.btn(r,'(a+b) + (c+d) − (b+c)', ()=>{ t.textContent = '42 + 60 − 52 = 50 = a + d'; },'p');
+  k.btn(r,'Average', ()=>{ t2.textContent = '50 ÷ 2 = 25'; k.say(out,'Average of first and last = 25','ok'); },'g');
+  const out = k.readout(k.row(),'Averages 21, 26, 30 → sums 42, 52, 60');
+  return {};
+};
+
+/* 17 · units digit of double factorials */
+W22[17] = (box, k) => {
+  const svg = k.svg(720, 230);
+  const terms = [['2!!','2',2],['4!!','8',8],['6!!','48',8],['8!!','384',4],['10!!','3840',0],['12!!','…0',0]];
+  const els = terms.map(([n,v,u],i)=>{ const g = S('g',{opacity:.25},svg); S('rect',{x:20+i*115,y:40,width:105,height:90,rx:12,fill:'#fff',stroke:'#3B82F6','stroke-width':3},g); S('text',{x:72+i*115,y:72,'text-anchor':'middle','font-size':18,fill:'#1D4ED8',text:n},g); S('text',{x:72+i*115,y:100,'text-anchor':'middle','font-size':16,fill:'#2B2340',text:v},g); S('text',{x:72+i*115,y:122,'text-anchor':'middle','font-size':15,fill:'#E11D48',text:'ends in '+u},g); return g; });
+  let n = 0;
+  const r = k.row();
+  k.btn(r,'Next term ▶', ()=>{ if (n<6){ els[n].setAttribute('opacity',1); n++; } k.say(out, n>=5 ? 'From 10!! on, each has a 10 inside → ends in 0. 2 + 8 + 8 + 4 = 22 → units digit 2' : `units so far: ${terms.slice(0,n).map(t=>t[2]).join(' + ')}`, n>=5?'ok':null); },'g');
+  const out = k.readout(k.row(),'Only the last digit matters.');
+  return {};
+};
+
+/* 18 · rectangle from its side midpoints */
+W22[18] = (box, k) => {
+  const U = 40, OX = 180, OY = 300;
+  const svg = k.svg(560, 340, 520);
+  const P = (x,y)=>[OX+x*U, OY-y*U];
+  for (let x=-4;x<=8;x++) S('line',{x1:P(x,-2)[0],y1:P(x,-2)[1],x2:P(x,6)[0],y2:P(x,6)[1],stroke:'#EEF2F7'},svg);
+  for (let y=-2;y<=6;y++) S('line',{x1:P(-4,y)[0],y1:P(-4,y)[1],x2:P(8,y)[0],y2:P(8,y)[1],stroke:'#EEF2F7'},svg);
+  const M = [[-3,0],[2,0],[5,4],[0,4]];
+  const para = S('polygon',{points:M.map(p=>P(...p).join(',')).join(' '),fill:'rgba(59,130,246,.3)',stroke:'#3B82F6','stroke-width':3},svg);
+  M.forEach(p=>S('circle',{cx:P(...p)[0],cy:P(...p)[1],r:6,fill:'#1D4ED8'},svg));
+  const cx = (M[0][0]+M[2][0])/2, cy = (M[0][1]+M[2][1])/2;
+  const A = M.map((m,i)=>{ const n = M[(i+1)%4]; return [m[0]+n[0]-cx, m[1]+n[1]-cy]; });
+  const big = S('polygon',{points:A.map(p=>P(...p).join(',')).join(' '),fill:'none',stroke:'#F59E0B','stroke-width':3,'stroke-dasharray':'8 6',opacity:0},svg);
+  const r = k.row();
+  k.btn(r,'Show the rectangle', ()=>{ big.setAttribute('opacity',1); k.say(out,'Blue = half of the rectangle. Blue = 5 × 4 = 20, so rectangle = 40','ok'); },'o');
+  const out = k.readout(k.row(),'Blue shape joins the 4 midpoints: base 5, height 4.');
+  return {};
+};
+
+/* 20 · magic sums with a mystery x */
+W22[20] = (box, k) => {
+  const svg = k.svg(720, 300);
+  const U = 80, OX = 60, OY = 30;
+  const cellT = [];
+  for (let r=0;r<3;r++) for (let c=0;c<3;c++){ S('rect',{x:OX+c*U,y:OY+r*U,width:U-6,height:U-6,rx:10,fill:'#fff',stroke:'#CBD5E1','stroke-width':3},svg); cellT.push(S('text',{x:OX+c*U+U/2-3,y:OY+r*U+U/2+8,'text-anchor':'middle','font-size':24,fill:'#2B2340'},svg)); }
+  const info = S('text',{x:520,y:120,'text-anchor':'middle','font-size':18,fill:'#2B2340'},svg);
+  const info2 = S('text',{x:520,y:160,'text-anchor':'middle','font-size':18},svg);
+  const r = k.row();
+  k.slider(r,'x =', 5, 12, 1, 6, v=>draw(v));
+  const out = k.readout(k.row(),'Every row and column adds to 12.');
+  function draw(x){
+    const a = 14 - x, d = 4 - x, c = x - 1;
+    const g = [-2,9,5, a,c,-1, x,d,8];
+    g.forEach((v,i)=>{ cellT[i].textContent = v; setA(cellT[i],{fill: [3,4,6,7].includes(i) ? '#1D4ED8' : '#2B2340'}); });
+    const big = x > a && x > c && x > d;
+    info.textContent = `others: ${a}, ${c}, ${d}`;
+    setA(info2,{text: big ? 'x is the biggest ✓' : 'x is not the biggest ✗', fill: big?'#16A34A':'#E11D48'});
+    k.say(out, big ? `x = ${x} works` + (x===8 ? ' — smallest!' : '') : `x = ${x} too small`, big ? (x===8?'ok':null) : 'bad');
+  }
+  draw(6);
+  return {};
+};
+
+/* 21 · baskets */
+W22[21] = (box, k) => {
+  const svg = k.svg(720, 230);
+  const g = S('g',{},svg);
+  const r = k.row();
+  k.slider(r,'Candace 1st half made:', 5, 11, 1, 6, v=>draw(v));
+  const out = k.readout(k.row(),'');
+  function draw(f){
+    g.innerHTML = '';
+    const s = 25 - f;
+    const rows = [['Steph',15,20,10,10,'#3B82F6'],['Candace',f,12,s,18,'#EC4899']];
+    rows.forEach(([n,a,b,c,d,col],i)=>{ S('text',{x:20,y:60+i*70,'font-size':18,fill:col,text:n},g); S('text',{x:200,y:60+i*70,'font-size':18,fill:'#2B2340',text:`1st: ${a} of ${b} (${Math.round(a/b*100)}%)`},g); S('text',{x:450,y:60+i*70,'font-size':18,fill:'#2B2340',text:`2nd: ${c} of ${d} (${Math.round(c/d*100)}%)`},g); });
+    const ok = f/12 < 0.75 && s/18 < 1 && s <= 18;
+    k.say(out, s>18 ? 'Can’t make more than 18!' : (ok ? `Both halves lower than Steph ✓  ${s} − ${f} = ${s-f}` : 'Candace must be lower than Steph in BOTH halves'), s>18?'bad':(ok?'ok':'bad'));
+  }
+  draw(6);
+  return {};
+};
+
+/* 25 · cricket on 4 leaves */
+W22[25] = (box, k) => {
+  const svg = k.svg(720, 300);
+  const pos = [[180,60],[300,180],[180,300-20],[60,180]];
+  pos.forEach((p,i)=>pos.forEach((q,j)=>{ if (i<j) S('line',{x1:p[0],y1:p[1],x2:q[0],y2:q[1],stroke:'#D9F99D','stroke-width':4},svg); }));
+  pos.forEach((p,i)=>{ S('text',{x:p[0],y:p[1]+14,'text-anchor':'middle','font-size':40,text:'🍃'},svg); });
+  const bug = S('text',{x:pos[0][0],y:pos[0][1]+10,'text-anchor':'middle','font-size':26,text:'🦗'},svg);
+  const prob = S('text',{x:520,y:120,'text-anchor':'middle','font-size':18,fill:'#2B2340'},svg);
+  const prob2 = S('text',{x:520,y:160,'text-anchor':'middle','font-size':18,fill:'#16A34A'},svg);
+  let trials = 0, home = 0;
+  const r = k.row();
+  k.btn(r,'🦗 4 hops', async ()=>{ let at = 0; for (let h=0;h<4;h++){ const nx = shuffle([0,1,2,3].filter(x=>x!==at))[0]; const a = pos[at], b = pos[nx]; await tween(300,e=>setA(bug,{x:lerp(a[0],b[0],e),y:lerp(a[1],b[1],e)+10})); at = nx; } trials++; if (at===0) home++; upd(); },'g');
+  k.btn(r,'Run 10,000', ()=>{ for (let t=0;t<10000;t++){ let at=0; for (let h=0;h<4;h++){ let nx; do { nx = Math.floor(Math.random()*4); } while (nx===at); at = nx; } trials++; if (at===0) home++; } upd(); },'p');
+  const out = k.readout(k.row(),'Start leaf = top.');
+  k.hint('Chance to be home: after 1 hop 0, after 2 hops 1/3, after 3 hops 2/9, after 4 hops 7/27.');
+  function upd(){ prob.textContent = `home ${home} of ${trials}`; prob2.textContent = `≈ ${(home/trials).toFixed(3)} (7/27 ≈ 0.259)`; k.say(out, `${home} of ${trials} ended at home`, trials>1000?'ok':null); }
+  return {};
+};
+
+/* 2026 hints — 4 per problem: know it · tool · aha · do it (labels never shown to kids) */
+addHints(2026, {
+1: [
+  HQ('A <b>pattern</b> repeats. Here the signs go <b>+ + −</b> again and again.', 'After + + − + +, what comes next?', ['+','−','×'], 1),
+  HQ('Long sums get easy if you <b>cut them into small groups</b>.', '12 numbers in groups of 3 = how many groups?', ['3','4','6'], 1),
+  HQ('Every group is <b>3 more</b> than the one before.', '4 + 5 − 6 = ?', ['3','6','9'], 0),
+  HQ('Groups: 0, 3, 6, 9. Add them.', '0 + 3 + 6 + 9 = ?', ['15','18','21'], 1)],
+2: [
+  HQ('A grid with 5 rows and 7 columns has <b>5 × 7</b> cells.', '5 × 7 = ?', ['30','35','40'], 1),
+  HQ('Peel it like an onion 🧅: count <b>one ring at a time</b>.', 'Take off the outside ring of 5 × 7. What is left?', ['4 × 6','3 × 5','3 × 6'], 1),
+  HQ('Cells in a ring = <b>big box − box inside</b>.', 'Outside ring: 35 − 15 = ?', ['15','20','25'], 1),
+  HQ('Ring of 2s: 15 − 3 = 12 cells. Middle: 3 cells.', '20 × 1 + 12 × 2 + 3 × 3 = ?', ['49','53','57'], 1)],
+3: [
+  HQ('<b>Perimeter</b> = the length all the way around a shape.', 'A square with side 3. Perimeter?', ['9','12','6'], 1),
+  HQ('Check the shapes <b>one by one</b>: does each need exactly 24 cm?', 'Hexagon: 6 sides of 5 needs?', ['24 cm','30 cm','11 cm'], 1),
+  HQ('Right triangle 3, 4 → long side 5. <b>Double it</b>: 6, 8 → 10.', '6 + 8 + 10 = ?', ['22','24','26'], 1),
+  HQ('Square with area 36: side × side = 36, so side = 6.', 'Perimeter of that square?', ['24','36','12'], 0)],
+4: [
+  HQ('<b>Percent</b> means "out of 100". 20% of 100 is 20.', '20% of $100?', ['$2','$20','$80'], 1),
+  HQ('No amount given? <b>Pretend you start with $100.</b>', '$100 goes down 20%. Now?', ['$80','$120','$20'], 0),
+  HQ('The 50% is of the <b>new</b> amount, not the start!', '50% of $80?', ['$40','$50','$30'], 0),
+  HQ('Add it back on.', '$80 + $40 is what % of $100?', ['110%','120%','130%'], 1)],
+5: [
+  HQ('<b>40 mph</b> means 40 miles every 1 hour.', 'In 2 hours at 40 mph?', ['42 miles','80 miles','60 miles'], 1),
+  HQ('Split the time: <b>driving + lunch = 3 hours</b>.', 'If driving took 2 hours, lunch was?', ['1 hour','2 hours','3 hours'], 0),
+  HQ('Driving time = distance ÷ speed.', '100 ÷ 40 = ?', ['2½ hours','3 hours','2 hours'], 0),
+  HQ('Lunch = 3 hours − 2½ hours.', '½ hour = ? minutes', ['15','30','50'], 1)],
+6: [
+  HQ('Area of a rectangle = <b>length × width</b>.', '10 × 8 = ?', ['18','80','36'], 1),
+  HQ('Border = <b>whole − middle</b>. Find the part he can NOT reach.', 'Whole 80, middle 50. Border?', ['30','50','130'], 0),
+  HQ('He reaches 1 m in from <b>both</b> sides, so take off 1 m twice.', '10 − 1 − 1 = ?', ['9','8','11'], 1),
+  HQ('Middle = 8 × 6 = 48. Border = 80 − 48 = 32.', '[[32/80]] simplifies to?', ['2/5','1/4','3/8'], 0)],
+7: [
+  HQ('Fractions add easily when the pieces are the <b>same size</b>. ½ = 5 tenths.', '½ = ? tenths', ['2','5','10'], 1),
+  HQ('Draw the battery as <b>10 equal cells</b> 🔋.', '3/10 = how many cells?', ['3','10','7'], 0),
+  HQ('Used: 5 + 3 = <b>8 cells</b> for 40 miles.', '1 cell = ? miles', ['4','5','8'], 1),
+  HQ('A full battery is 10 cells.', '10 × 5 = ?', ['45','50','80'], 1)],
+8: [
+  HQ('74% means <b>74 out of every 100</b>.', '74% of 100 people?', ['26','74','7.4'], 1),
+  HQ('Make a fraction smaller: <b>divide top and bottom</b> by the same number.', '[[74/100]], both ÷ 2 = ?', ['37/50','37/100','74/50'], 0),
+  HQ('People come <b>whole</b>! 37 can’t be shared by 2 or 5, so 37 of 50 can’t shrink.', 'Can 37 be split evenly by 2 or 5?', ['Yes','No'], 1),
+  HQ('Try fewer, like 25: 74% of 25 = 18.5 people ✗', 'Fewest people asked?', ['25','50','100'], 1)],
+9: [
+  HQ('<b>√</b> asks: what number times itself gives this? √81 = 9, since 9 × 9 = 81.', '√16 = ?', ['4','8','16'], 0),
+  HQ('Work from the <b>inside out</b>.', 'First thing to do in √(16 × √81)?', ['√81','16 ×','the big √'], 0),
+  HQ('Top: √(16 × 9) = √144. Bottom: √(81 × 4) = √324.', '√144 = ?', ['12','14','72'], 0),
+  HQ('√324 = 18. Now simplify.', '[[12/18]] = ?', ['2/3','3/4','1/2'], 0)],
+10: [
+  HQ('"After" = a bigger finish time. "Before" = a smaller one.', '3 min AFTER minute 2 is minute?', ['5','−1','3'], 0),
+  HQ('Put everyone on a <b>time line</b>. Pedro = minute 0.', 'Olympia = minute?', ['3','−3','11'], 0),
+  HQ('Careful: Luke is 6 after <b>Olympia</b>, not after Pedro.', 'Luke = 3 + 6 = ?', ['6','9','11'], 1),
+  HQ('Times: Pedro 0, Olympia 3, Melina 5, Luke 9, Nico 11.', 'The 4th time is?', ['5','9','11'], 1)],
+11: [
+  HQ('Around a whole circle = <b>2 × π × radius</b>.', 'Radius 1: around = ?', ['π','2π','4π'], 1),
+  HQ('A quarter circle is <b>¼</b> of the way around.', '¼ of 2π = ?', ['π/2','π','2π'], 0),
+  HQ('Each arc = π/2 × its square’s side. So just <b>add the sides</b>!', '1 + 1 + 2 + 3 + 5 = ?', ['11','12','13'], 1),
+  HQ('Total = π/2 × 12.', '[[π/2 × 12]] = ?', ['6π','12π','24π'], 0)],
+12: [
+  HQ('Each box = the <b>sum</b> of the two circles it touches.', 'Circles 2 and 5 → box?', ['7','10','3'], 0),
+  HQ('Start where there’s <b>only one choice</b>.', 'Using 1–6 once each, 10 = ?', ['5 + 5','4 + 6','3 + 7'], 1),
+  HQ('Test both ways (6 or 4 on the left). A <b>repeated digit</b> means ✗.', 'Can a digit be used twice?', ['Yes','No'], 1),
+  HQ('Left = 6 makes top 3, but 3 is needed on the right ✗. So left = 4.', 'Top = 9 − 4 = ?', ['4','5','6'], 1)],
+13: [
+  HQ('A right triangle is <b>half</b> of the rectangle around it.', 'Triangle in a 3 × 1 box: area?', ['1.5','3','4'], 0),
+  HQ('<b>Box it in!</b> Draw a straight square around the tilted one.', 'Each side goes 3 across, 1 up. Box = ?', ['3 × 3','4 × 4','5 × 5'], 1),
+  HQ('Box = tilted square + <b>4 corner triangles</b>.', '4 triangles × 1.5 = ?', ['4','6','8'], 1),
+  HQ('Tilted square = box − triangles.', '16 − 6 = ?', ['10','11','12'], 0)],
+14: [
+  HQ('<b>Equally spaced</b> = same jump each time, like 3, 7, 11.', '5, 8, 11, ?', ['13','14','15'], 1),
+  HQ('<b>Compare the two clues.</b> What changed?', '40 → 60: up by?', ['10','20','30'], 1),
+  HQ('Both numbers moved up one jump: <b>2 jumps = 20</b>.', '1 jump = ?', ['10','20','5'], 0),
+  HQ('1st + 2nd = 40 and 2nd = 1st + 10.', '1st = ?', ['15','20','25'], 0)],
+15: [
+  HQ('A cube has <b>6 faces</b>. A face hides only under another cube.', 'Faces on a cube?', ['4','6','8'], 1),
+  HQ('<b>Try small numbers first</b>: 1 cube, 2 cubes, 3…', '1 cube alone: gray hidden?', ['Yes','No'], 1),
+  HQ('Each cube needs <b>2 neighbours</b>, on 2 sides that meet.', 'In a row of 3, an end cube has ? neighbours', ['1','2','3'], 0),
+  HQ('Try 4 cubes in a <b>2 × 2 square</b>.', 'Neighbours for each cube?', ['1','2','3'], 1)],
+16: [
+  HQ('A number divides by 4 if its <b>last 2 digits</b> do (100 = 4 × 25).', 'Does 316 divide by 4? (16 ÷ 4)', ['Yes','No'], 0),
+  HQ('<b>Ignore what doesn’t matter.</b> Only the end counts.', '2,068 ÷ 4 — check which part?', ['20','68','2,068'], 1),
+  HQ('Even tens: 00, 20, 40, 60, 80 all divide by 4. So only the <b>last digit</b> decides.', 'Does 40 divide by 4?', ['Yes','No'], 0),
+  HQ('Last digit 0, 2, 4, 6 or 8. Which work? 0, 4, 8.', '3 of 5 = ?', ['2/5','3/5','3/4'], 1)],
+17: [
+  HQ('Neighbours sit <b>right next to</b> each other. In A B C D: AB, BC, CD.', 'Is A next to C in A B C D?', ['Yes','No'], 1),
+  HQ('<b>List what’s allowed</b>, then build from it.', 'Which pair is allowed now?', ['A–B','A–C','C–D'], 1),
+  HQ('Only 3 pairs are allowed: AC, AD, BD. A row of 4 needs <b>3 pairs</b> — use them all!', 'Pairs in a row of 4?', ['2','3','4'], 1),
+  HQ('Chain them: C–A–D–B. Backwards counts too.', 'Is B–D–A–C ok?', ['Yes','No'], 0)],
+18: [
+  HQ('Odd numbers in a row go up by <b>2</b>: 5, 7, 9, …', 'After 9, 11 comes?', ['12','13','15'], 1),
+  HQ('Sum = <b>how many × the middle</b>.', '5 + 7 + 9 = 3 × ?', ['5','7','9'], 1),
+  HQ('Try each count: <b>60 ÷ count = middle</b>. The numbers must be odd.', '2 numbers, middle 30 → ?', ['29 + 31','28 + 32','30 + 30'], 0),
+  HQ('6 numbers: middle 10 → 5, 7, 9, 11, 13, 15 ✓. Check the others.', '3 numbers: 18, 20, 22. Odd?', ['Yes','No'], 1)],
+19: [
+  HQ('<b>5× faster</b>: in the same time, the dog goes 5 times as far.', 'Miguel walks 10 m. The dog runs?', ['15 m','50 m','5 m'], 1),
+  HQ('Cut the distances into <b>equal pieces</b>: Miguel 1 piece, dog 5.', 'Together = ? pieces', ['5','6','10'], 1),
+  HQ('When they meet, together they have gone <b>2 whole trips</b> to the tree.', 'Dog + Miguel = ? trips', ['1','2','3'], 1),
+  HQ('6 pieces = 2 trips.', '1 piece = ? of a trip', ['1/6','1/3','1/2'], 1)],
+20: [
+  HQ('<b>Order matters</b>: gold-on-silver and silver-on-gold are different.', '1 silver + 1 gold: how many stacks?', ['1','2','3'], 1),
+  HQ('<b>Split into cases</b>: 0 silver, 1 silver, 2 silver…', '3 silver = 9 mm. Allowed?', ['Yes','No'], 1),
+  HQ('1 silver + 5 gold = 6 coins. The silver can be in any spot.', 'Stacks with 1 silver?', ['5','6','8'], 1),
+  HQ('2 silver + 2 gold = 4 coins. Pick 2 spots for silver.', 'Ways to pick 2 of 4 spots?', ['4','6','8'], 1)],
+21: [
+  HQ('<b>Chance</b> = good ways ÷ all ways (all equally likely).', 'A coin lands heads. Chance?', ['1/2','1/3','1'], 0),
+  HQ('Two things must <b>both</b> happen? <b>Multiply</b> the chances.', 'Heads, then heads again?', ['1/2','1/4','1'], 1),
+  HQ('A tip only leads inside. An inner dot has <b>2 inner + 2 tip</b> neighbours.', 'From inside, chance to stay inside?', ['1/4','1/2','1'], 1),
+  HQ('Move 2 must stay inside, then move 3 must step out.', '½ × ½ = ?', ['1/4','1/2','1'], 0)],
+22: [
+  HQ('The <b>median</b> is the middle number in order.', 'Median of 2, 9, 4, 7, 1?', ['4','9','7'], 0),
+  HQ('To make M small, ask what M <b>needs</b>: 3 of the 5 medians are ≤ M.', 'Of 5 medians, how many are ≤ M?', ['2','3','5'], 1),
+  HQ('Each of those 3 groups has <b>3 numbers ≤ its median</b>.', 'So at least 3 × 3 = ? numbers ≤ M', ['6','9','12'], 1),
+  HQ('M can’t be below 9. Try groups {1,2,3,…}, {4,5,6,…}, {7,8,9,…}.', 'Smallest M?', ['8','9','10'], 1)],
+23: [
+  HQ('Around a circle = <b>π × across</b>. Coin 4 cm → π × 4.', 'Around one coin?', ['2π','4π','8π'], 1),
+  HQ('Split the band: <b>straight parts + curvy parts</b>.', 'A straight part = distance between coin…', ['centres','edges','tops'], 0),
+  HQ('All the curvy bits together make <b>exactly 1 circle</b> (you turn around once).', 'Total turn walking around?', ['180°','360°','720°'], 1),
+  HQ('Centres: bottom 8, top 4, slants 4 and 4.', 'Straight total?', ['16','20','24'], 1)],
+24: [
+  HQ('[[n!]] multiplies 1 × 2 × … × n. 14! has 7 and 14 inside.', 'How many 7s inside 14!?', ['1','2','14'], 1),
+  HQ('<b>Flip the counting</b>: for 7, 14, 21… ask how many factorials hold it.', '7 is inside 7! up to 51!. How many?', ['44','45','51'], 1),
+  HQ('<b>49 = 7 × 7</b> hides two 7s!', '7s inside 49?', ['1','2','7'], 1),
+  HQ('45 + 38 + 31 + 24 + 17 + 10 + 3, then add 3 for 49’s extra 7s.', '45 + 38 + 31 + 24 + 17 + 10 + 3 = ?', ['158','168','178'], 1)],
+25: [
+  HQ('Cut a small <b>equilateral triangle</b> off each corner → a hexagon with 120° angles.', 'The cut-off piece is a…', ['triangle','square','circle'], 0),
+  HQ('Turn shapes into <b>numbers</b>: write the 3 corner cuts.', 'Example: cuts 1 and 2, middle 3. Triangle side?', ['5','6','7'], 1),
+  HQ('Side = cut + middle + cut, middle ≥ 1. So <b>two cuts add to 5 or less</b>.', 'Cuts 3 and 3 ok?', ['Yes','No'], 1),
+  HQ('List cuts small to big: 1,1,1 · 1,1,2 · … Flips are the same hexagon.', 'Is 2, 2, 3 ok?', ['Yes','No'], 0)]
+});
+
+/* 2025 hints — 4 per problem: know it · tool · aha · do it (labels never shown to kids) */
+addHints(2025, {
+1: [
+  HQ('<b>Percent</b> = out of 100. 1 out of 4 = 25%.', '1 out of 4 = ?%', ['25','40','4'], 0),
+  HQ('Cut the star into <b>whole squares and half squares</b>, then count.', '2 halves = ? whole', ['1','2','4'], 0),
+  HQ('The star = 4 whole squares + <b>8 half squares</b>.', '8 halves = ? wholes', ['2','4','8'], 1),
+  HQ('Star = 4 + 4 = 8 squares. The grid has 16.', '8 out of 16 = ?%', ['25','50','75'], 1)],
+2: [
+  HQ('<b>Place value</b>: each place is worth 10 × the place to its right.', '100 = how many tens?', ['10','100','1'], 0),
+  HQ('Turn each symbol into its <b>value</b>, then add.', '4 coils = 4 × 100 = ?', ['40','400','4,000'], 1),
+  HQ('No lotus = no thousands. That place gets a <b>0</b>!', 'Thousands digit?', ['0','1','4'], 0),
+  HQ('10,000 + 400 + 20 + 3.', '= ?', ['10,423','14,023','1,423'], 0)],
+3: [
+  HQ('Sharing equally = <b>dividing</b>.', '12 cards shared by 3 = ?', ['3','4','36'], 1),
+  HQ('First find the <b>total</b>, then share again.', 'Annika + 3 friends = ? players', ['3','4','5'], 1),
+  HQ('The number of cards <b>doesn’t change</b> when friends join.', '4 × 15 = ?', ['45','60','75'], 1),
+  HQ('Now 6 players share 60.', '60 ÷ 6 = ?', ['10','12','15'], 0)],
+4: [
+  HQ('Counting back by 7 = <b>take away 7</b> each time.', '93 − 7 = ?', ['86','87','83'], 0),
+  HQ('Count the <b>gaps</b>, not the numbers (like fence posts).', '3 numbers in a row have ? gaps', ['2','3','4'], 0),
+  HQ('The 10th number is <b>9 hops</b> after the 1st.', 'Hops to #10?', ['9','10','11'], 0),
+  HQ('9 hops × 7 = 63.', '100 − 63 = ?', ['37','43','30'], 0)],
+5: [
+  HQ('On a street grid, shortest = <b>blocks across + blocks up/down</b>.', '2 across, 3 down = ? blocks', ['5','6','3'], 0),
+  HQ('Break the trip into <b>legs</b> and add them.', 'F→A→B→C→F has ? legs', ['3','4','5'], 1),
+  HQ('Every shortest path between two corners is the <b>same length</b>. Just count!', 'A to B: 7 across, 3 down = ?', ['4','10','21'], 1),
+  HQ('Legs: 3, 10, 6, 5.', '3 + 10 + 6 + 5 = ?', ['22','24','26'], 1)],
+6: [
+  HQ('A <b>multiple of 4</b> splits into 4s with nothing left over.', 'Is 84 a multiple of 4?', ['Yes','No'], 0),
+  HQ('Look at <b>leftovers</b> instead of big numbers.', '18 ÷ 4 leaves?', ['1','2','3'], 1),
+  HQ('The total 85 has leftover 1. <b>Erase a number with leftover 1</b>.', '85 ÷ 4 leaves?', ['1','2','3'], 0),
+  HQ('Find the one with leftover 1 when ÷ 4.', 'Which?', ['15','17','19'], 1)],
+7: [
+  HQ('"<b>At least</b> 80%" means 80% or more.', 'Is 95% at least 80%?', ['Yes','No'], 0),
+  HQ('Think of <b>groups inside groups</b>: the 50 includes the 13.', 'Are the 13 (90%+) inside the 50?', ['Yes','No'], 0),
+  HQ('80% up to 90% = (80% and up) <b>take away</b> (90% and up).', 'Do we need the 27?', ['Yes','No'], 1),
+  HQ('Take the 13 away from the 50.', '50 − 13 = ?', ['37','23','45'], 0)],
+8: [
+  HQ('A cube has <b>6 equal square faces</b>. Volume = side × side × side.', 'Side 2: volume?', ['4','6','8'], 2),
+  HQ('<b>Work backwards</b>: net area → one face → side → volume.', '18 ÷ 6 = ?', ['3','6','12'], 0),
+  HQ('side × side = 3, so side = <b>√3</b>. Not whole — that’s ok!', '√3 × √3 = ?', ['3','9','√3'], 0),
+  HQ('Volume = face × side = 3 × √3.', '= ?', ['3√3','9','6√3'], 0)],
+9: [
+  HQ('<b>Average</b> = total ÷ how many.', 'Average of 4 and 8?', ['6','12','4'], 0),
+  HQ('Pair numbers that make the <b>same sum</b>.', '1 + 12 = 2 + 11 = ?', ['12','13','14'], 1),
+  HQ('Every number is used <b>once</b>, so just average all 12.', 'Each number is used…', ['once','twice','never'], 0),
+  HQ('1 to 12 makes 6 pairs of 13.', 'Average = 13 ÷ 2 = ?', ['6','6.5','7'], 1)],
+10: [
+  HQ('Area of a rectangle = <b>length × width</b>.', '5 × 3 = ?', ['8','15','16'], 1),
+  HQ('Covered = A + B <b>− overlap</b> (don’t count it twice).', 'Two cards of area 10 overlap by 2. Covered?', ['18','20','22'], 0),
+  HQ('Spinning around the middle of DC makes the overlap a <b>square</b>.', 'Its side = half of 5 = ?', ['2.5','3','1.5'], 0),
+  HQ('Overlap = 2.5 × 2.5 = 6.25.', '30 − 6.25 = ?', ['23.75','24.25','17.5'], 0)],
+11: [
+  HQ('Each tile is <b>4 squares</b> joined edge to edge.', 'Squares in 3 tiles?', ['7','12','16'], 1),
+  HQ('Tiles can <b>turn and flip</b>. Try them on the board!', 'Can tiles be flipped?', ['Yes','No'], 0),
+  HQ('Put the S in. The holes left look like <b>hooks</b>.', 'A hook of 4 squares is an…', ['L','O','I'], 0),
+  HQ('Every square covered once, no gaps.', 'Which pair fills the rest?', ['L and L','I and T','O and T'], 0)],
+12: [
+  HQ('Area of a circle = <b>π × r × r</b>.', 'r = 2: area?', ['2π','4π','8π'], 1),
+  HQ('Slanted distance: <b>d × d = across² + up²</b>.', '3 across, 4 up: d = ?', ['5','7','12'], 0),
+  HQ('Centre in the middle. The circle grows until it hits the <b>nearest inside corner</b>.', 'The circle stops at…', ['an inside corner','a long edge','the top tip'], 0),
+  HQ('Nearest corner: 1 across, 2 up.', 'r × r = 1 + 4 = ?', ['3','5','9'], 1)],
+13: [
+  HQ('<b>Remainder</b> = what’s left after taking out 7s. 9 ÷ 7 leaves 2.', '16 ÷ 7 leaves?', ['1','2','3'], 1),
+  HQ('Look for a <b>repeating cycle</b>.', 'Remainders of 2, 4, 6, 8: 2, 4, 6, ?', ['0','1','8'], 1),
+  HQ('Every 7 even numbers, the remainders repeat: 2, 4, 6, 1, 3, 5, 0.', 'Even numbers from 2 to 42?', ['21','14','42'], 0),
+  HQ('3 full cycles = 3 each. Then 44, 46, 48, 50 add 2, 4, 6, 1.', 'Remainder 0 happens ? times', ['3','4','5'], 0)],
+14: [
+  HQ('<b>Median</b> = middle. With 6 numbers, average the middle two.', 'Median of 1, 3, 5, 9?', ['3','4','5'], 1),
+  HQ('Mean = total ÷ count, so <b>total = mean × count</b>.', '6 numbers, mean 10: total?', ['16','60','4'], 1),
+  HQ('A big N goes at the end, so the middle two stay <b>7 and 7</b>.', 'Mean = 2 × 7 = ?', ['14','9','49'], 0),
+  HQ('Total = 6 × 14 = 84. The list has 50 now.', '84 − 50 = ?', ['34','28','24'], 0)],
+15: [
+  HQ('Folding in half <b>pairs</b> each square with its mirror square.', '36 squares → ? pairs', ['18','36','12'], 0),
+  HQ('Try the <b>extremes</b>: most spread out vs most bunched up.', 'For FEW gold pairs, silver should be…', ['spread out','bunched'], 0),
+  HQ('Spread: each silver spoils a pair → 18 − 13 = 5. Bunched: <b>2 silvers share</b> a pair.', '13 silver bunched: pairs touched?', ['6','7','13'], 1),
+  HQ('Most gold pairs = 18 − 7 = 11.', '5 + 11 = ?', ['14','16','18'], 1)],
+16: [
+  HQ('"<b>Differ by 10</b>": 3 and 13, 7 and 17.', 'Which pair differs by 10?', ['4 and 14','4 and 10','4 and 40'], 0),
+  HQ('Make <b>pairs</b>: 1–11, 2–12, …, 10–20.', 'How many pairs?', ['5','10','20'], 1),
+  HQ('10 picks, 10 pairs, at most 1 from each → <b>exactly 1 from each</b>!', 'Picks per pair?', ['0','1','2'], 1),
+  HQ('Start with 1 + 2 + … + 10 = 55. Five picks are 10 bigger.', '55 + 5 × 10 = ?', ['100','105','110'], 1)],
+17: [
+  HQ('A <b>fraction of a group</b>: ¼ of 100 = 100 ÷ 4 = 25.', '⅓ of 120 = ?', ['30','40','60'], 1),
+  HQ('<b>Follow the arrows</b>: who leaves A, who stays, who arrives.', 'Work in A = stay + ?', ['arrive','leave'], 0),
+  HQ('A sends 25 to B and 20 to C. The rest <b>stay</b>.', '100 − 45 = ?', ['45','55','65'], 1),
+  HQ('B sends ⅓ of 120 = 40. C sends ⅛ of 160 = 20.', '55 + 40 + 20 = ?', ['85','105','115'], 2)],
+18: [
+  HQ('The square inside the circle leaves <b>4 equal pieces</b>.', 'How many pieces?', ['2','4','8'], 1),
+  HQ('<b>Grow a shape</b>: lengths × 2 → area × 4 (2 × 2).', 'Lengths × 3 → area × ?', ['3','6','9'], 2),
+  HQ('¼ of the big gap = the whole small gap, so the big gap is <b>4×</b> bigger.', 'Big gap = small gap × ?', ['2','4','8'], 1),
+  HQ('Area × 4 means lengths × 2.', 'R = 1 × 2 = ?', ['√2','2','4'], 1)],
+19: [
+  HQ('<b>Distance = speed × time</b>.', '20 mph for ½ hour?', ['10 miles','20 miles','40 miles'], 0),
+  HQ('Go in <b>chunks of time</b> and track both cars.', '5 miles at 25 mph takes?', ['12 min','15 min','20 min'], 0),
+  HQ('Same speed, coming toward each other → they meet <b>halfway</b>.', 'Cars at 2 and 6, same speed. Meet at?', ['3','4','5'], 1),
+  HQ('After 12 min: A at 5, B at 11. After 3 more: A at 7, B at 10. Both 40 mph now.', 'Halfway between 7 and 10?', ['8','8.5','9'], 1)],
+20: [
+  HQ('Half of a half = a <b>quarter</b>. Half of a quarter = an <b>eighth</b>.', '½ of ¼ = ?', ['1/8','1/6','1/2'], 0),
+  HQ('Look at <b>one round</b> and find the pattern.', 'Round 1: ½, ¼, ⅛. Sarika gets ? × Dev', ['2','4','½'], 0),
+  HQ('Every round splits <b>4 : 2 : 1</b>, forever. So the whole cheese does too.', '4 + 2 + 1 = ?', ['6','7','8'], 1),
+  HQ('Sarika gets 4 parts of 7.', 'Sarika = ?', ['4/7','1/2','2/3'], 0)],
+21: [
+  HQ('"<b>Differ by at least 2</b>": 3 and 5 ok, 3 and 4 not.', 'Can 6 and 7 be joined?', ['Yes','No'], 1),
+  HQ('Start with the <b>busiest</b> pods.', 'C and F each touch ? pods', ['3','4','5'], 2),
+  HQ('Only <b>1 and 7</b> have 5 safe partners. So C and F are 1 and 7.', 'Safe partners of 4?', ['1, 2, 6, 7','3, 5','all'], 0),
+  HQ('E touches C and F, so not 2 or 6. A and B take 3 and 5 → E = 4.', '1 + 4 + 7 = ?', ['11','12','13'], 1)],
+22: [
+  HQ('<b>Factors</b> of 36 divide it evenly: 1, 2, 3, 4, 6, 9, 12, 18, 36.', 'Does 5 divide 36?', ['Yes','No'], 1),
+  HQ('Add something <b>pretend</b> to make the pattern neat.', 'Add a pretend coat at the end. Hooks?', ['34','35','36'], 2),
+  HQ('Now it’s repeating blocks of <b>(gap + 1 coat)</b>. The block count divides 36.', '3 coats + pretend = ? blocks', ['3','4','5'], 1),
+  HQ('Blocks: 2, 3, 4, 6, 9, 12, 18 (each needs a gap).', 'How many choices?', ['5','7','9'], 1)],
+23: [
+  HQ('n × n − 1 = <b>(n − 1) × (n + 1)</b>. Like 5 × 5 − 1 = 4 × 6.', '10 × 10 − 1 = 9 × ?', ['10','11','12'], 1),
+  HQ('Use <b>last digits</b>: a square ending in 00 has a root ending in 0.', 'Which square ends in 00?', ['40 × 40','45 × 45','49 × 49'], 0),
+  HQ('Exactly 2 primes → n − 1 and n + 1 must <b>both be prime</b>.', 'Is 91 prime? (7 × 13)', ['Yes','No'], 1),
+  HQ('Check n = 40, 50, 60, 70, 80, 90, 100.', 'Which pair is both prime?', ['39, 41','59, 61','89, 91'], 1)],
+24: [
+  HQ('At a 60° corner, a slanted side sticks out <b>half its length</b>.', 'Slanted side 6 sticks out?', ['3','6','2'], 0),
+  HQ('Use <b>letters</b>: top t, slanted side s.', 'Bottom = top + 2 halves = ?', ['t + s','t + 2s','2t'], 0),
+  HQ('Perimeter = t + (t + s) + s + s = <b>2t + 3s = 30</b>.', 'So s must be…', ['even','odd','anything'], 0),
+  HQ('Try s = 2, 4, 6, 8, … and keep t ≥ 1.', 's = 10 gives t = ?', ['0','5','10'], 0)],
+25: [
+  HQ('Each path: 5 ↗ and 5 ↖ steps. Choose spots for the ↗: <b>252 paths</b>.', 'Steps in a path?', ['5','10','25'], 1),
+  HQ('<b>Pair each path with its mirror</b>.', 'Is a mirror path also a path?', ['Yes','No'], 0),
+  HQ('Path’s area + mirror’s area = the <b>whole diamond = 25</b>.', 'Average per path?', ['12.5','25','10'], 0),
+  HQ('252 paths × 12.5 each.', '252 × 12.5 = ?', ['2520','3150','6300'], 1)]
+});
+
+/* 2024 hints — 4 per problem: know it · tool · aha · do it (labels never shown to kids) */
+addHints(2024, {
+1: [
+  HQ('The ones digit of an answer depends only on the <b>ones digits</b>.', 'Ones digit of 37 + 45?', ['2','7','12'], 0),
+  HQ('<b>Ignore the big parts!</b> Keep only the ones digits.', 'Ones digits here are all…', ['2','0','22'], 0),
+  HQ('Taking away five 2s = taking away 10. And −10 <b>doesn’t change</b> the ones digit!', 'Does −10 change the ones digit?', ['Yes','No'], 1),
+  HQ('Start with the ones digit 2, take away 10.', 'Ones digit left?', ['0','2','8'], 1)],
+2: [
+  HQ('A fraction is a <b>division</b>: [[44/11]] = 44 ÷ 11.', '44 ÷ 11 = ?', ['4','0.4','40'], 0),
+  HQ('<b>Simplify</b> each fraction first.', '[[110/44]] = ?', ['5/2','11/4','2/5'], 0),
+  HQ('<b>Hundredths</b>: [[4/100]] = 0.04.', '[[44/1100]] = [[4/100]] = ?', ['0.4','0.04','0.004'], 1),
+  HQ('Line up the decimal points and add.', '4 + 2.5 + 0.04 = ?', ['6.54','6.504','6.9'], 0)],
+3: [
+  HQ('Area of a square = <b>side × side</b>.', 'Side 7: area?', ['14','49','28'], 1),
+  HQ('A ring you can see = <b>big square − square on top</b>.', 'Ring of 10 and 9: 100 − 81 = ?', ['19','11','1'], 0),
+  HQ('Gray shows in <b>2 rings</b>: 10 around 9, and 7 around 4.', 'Inner gray ring: 49 − 16 = ?', ['33','23','65'], 0),
+  HQ('Add both gray rings.', '19 + 33 = ?', ['42','52','50'], 1)],
+4: [
+  HQ('<b>Perfect squares</b>: 1, 4, 9, 16, 25, 36, 49…', 'Which is a perfect square?', ['24','36','40'], 1),
+  HQ('Find the <b>full total</b> first, then take one away.', '1 + 2 + … + 9 = ?', ['36','45','55'], 1),
+  HQ('Leaving out one number gives a total from <b>36 to 44</b>.', 'Square between 36 and 44?', ['36','40','49'], 0),
+  HQ('45 − ? = 36', 'Left out?', ['8','9','7'], 1)],
+5: [
+  HQ('A multiple of 6 needs a <b>2 and a 3</b> inside (6 = 2 × 3).', 'Is 8 a multiple of 6?', ['Yes','No'], 1),
+  HQ('<b>List every way</b> to roll each sum.', 'Ways to roll sum 6?', ['1+5, 2+4, 3+3','2+4 only','3+3 only'], 0),
+  HQ('Sum 6 gives products 5, 8, 9. <b>None</b> has both a 2 and a 3!', '2 × 4 = 8. Multiple of 6?', ['Yes','No'], 1),
+  HQ('Others work: 2+3, 1+6, 2+6, 3+6.', 'Impossible sum?', ['5','6','9'], 1)],
+6: [
+  HQ('A <b>straight line</b> is the shortest way between two points.', 'Shorter?', ['straight','curvy'], 0),
+  HQ('Compare <b>piece by piece</b>. Parts that match cancel out.', 'P and S share round ends. Compare the…', ['middles','ends'], 0),
+  HQ('R cuts the curves with straight lines → <b>shortest</b>. Q zigzags most → <b>longest</b>.', 'Longest?', ['P','R','Q'], 2),
+  HQ('S has the longer middle.', 'Shorter: P or S?', ['P','S'], 0)],
+7: [
+  HQ('3 × 7 = <b>21 squares</b>. Big tiles cover 4 each.', '21 − 4 × 5 = ?', ['1','4','5'], 0),
+  HQ('Look at it <b>row by row</b>.', 'Can a 1 × 4 bar stand up in 3 rows?', ['Yes','No'], 1),
+  HQ('Big tiles cover 2 or 4 squares of a row — always <b>even</b>. A row of 7 is odd!', 'Small tiles needed, at least?', ['1','2','3'], 2),
+  HQ('Small tiles = 21 − (a multiple of 4): 1, 5, 9…', 'Smallest that is 3 or more?', ['1','5','9'], 1)],
+8: [
+  HQ('+3 adds 3. <b>Doubling</b> = × 2.', '$5 doubled?', ['$8','$10','$7'], 1),
+  HQ('Draw a <b>tree</b>: each day, 2 branches.', 'Tuesday amounts?', ['$4 and $5','$5 and $6','$4 only'], 0),
+  HQ('Some branches land on the <b>same amount</b> — count it once!', 'Wednesday: 7, 8, 8, 10. Different?', ['3','4'], 0),
+  HQ('Thursday from 7, 8, 10: 10, 14, 11, 16, 13, 20.', 'How many different?', ['5','6','8'], 1)],
+9: [
+  HQ('"Half as many red as green" → green is <b>2×</b> red.', '3 red → green?', ['6','3','1.5'], 0),
+  HQ('Use <b>parts</b>: red = 1 part, green = 2 parts.', 'Blue = 2 × green = ? parts', ['2','4','8'], 1),
+  HQ('1 + 2 + 4 = <b>7 parts</b>. The total must be a multiple of 7.', '1 + 2 + 4 = ?', ['6','7','8'], 1),
+  HQ('Find the multiple of 7.', 'Which?', ['26','27','28'], 2)],
+10: [
+  HQ('Rising 1.515 each year: 2 years → <b>2 × 1.515</b>.', '2 × 1.515 = ?', ['3.03','1.517','3.3'], 0),
+  HQ('<b>Count the years</b> first.', '2030 − 1980 = ?', ['49','50','51'], 1),
+  HQ('50 × 1.515 = 151.5 ÷ 2 (× 100, then ÷ 2).', '151.5 ÷ 2 = ?', ['75.75','75.5','76.5'], 0),
+  HQ('338 + 75.75 = 413.75.', 'Nearest whole number?', ['413','414','420'], 1)],
+11: [
+  HQ('Triangle area = <b>½ × base × height</b>.', 'Base 4, height 3: area?', ['6','12','7'], 0),
+  HQ('A <b>flat side</b> (same y) makes an easy base.', 'A(5,7) to B(11,7): base?', ['6','7','11'], 0),
+  HQ('Height = how far C is <b>above y = 7</b>. C’s x doesn’t matter!', '½ × 6 × h = 12 → h = ?', ['2','4','6'], 1),
+  HQ('y = 7 + 4.', 'y = ?', ['10','11','12'], 1)],
+12: [
+  HQ('"1 more, then 2 more, then 3 more": 5 → 6 → 8 → 11.', '10, 11, 13, ?', ['14','15','16'], 2),
+  HQ('<b>Take away the extras</b>, then share equally.', 'Extras 0, 1, 3, 6. Total?', ['9','10','12'], 1),
+  HQ('Without extras, all 4 tanks are <b>equal</b>: 90 − 10 = 80.', '80 ÷ 4 = ?', ['20','22','24'], 0),
+  HQ('Tank 4 = tank 1 + 6.', '20 + 6 = ?', ['24','26','23'], 1)],
+13: [
+  HQ('Back on the ground after 6 hops → <b>ups = downs</b>.', 'Ups?', ['2','3','4'], 1),
+  HQ('<b>List them in order</b> (UUU…, UUD…, UDU…).', 'Can the first hop be down?', ['Yes','No'], 1),
+  HQ('At every moment, <b>ups so far ≥ downs so far</b>.', 'U D D U U D ok?', ['Yes','No'], 1),
+  HQ('UUUDDD, UUDUDD, UUDDUD, UDUUDD, UDUDUD.', 'How many?', ['4','5','6'], 1)],
+14: [
+  HQ('Shortest trip = <b>smallest total</b> of road lengths.', 'Shorter: 5 + 2 or 8?', ['5 + 2','8'], 0),
+  HQ('Find the <b>best distance to each town</b>, moving out from A.', 'Best to M?', ['8','7'], 1),
+  HQ('Once a town’s best is known, <b>only build on that</b>.', 'Best to Y: 7 + 6 or 5 + 10?', ['13','15'], 0),
+  HQ('Best to C: 13 + 5 = 18. Then C → Z is 10.', '18 + 10 = ?', ['28','30','32'], 0)],
+15: [
+  HQ('abcabc = <b>abc × 1001</b>. Like 123123 = 123 × 1001.', '456456 = 456 × ?', ['1001','1000','101'], 0),
+  HQ('<b>Cancel</b> the same thing on both sides.', '8 × FLY × 1001 = BUG × 1001 means…', ['8 × FLY = BUG','FLY = BUG','8 = BUG'], 0),
+  HQ('BUG has 3 digits, so 8 × FLY < 1000 → <b>FLY ≤ 124</b>.', '124 × 8 = 992. All digits different?', ['Yes','No'], 1),
+  HQ('Try 123: 123 × 8 = 984 ✓', '123 + 984 = ?', ['1098','1107','1116'], 1)],
+16: [
+  HQ('Multiples of 3 from 1 to 81: 3, 6, …, 81.', 'How many?', ['9','27','81'], 1),
+  HQ('<b>Flip it</b>: squeeze all the multiples of 3 into few rows and columns.', 'A row’s product has a 3 if it holds…', ['a multiple of 3','an odd number'], 0),
+  HQ('r rows and c columns cross in <b>r × c</b> spots. Need ≥ 27.', '5 rows × 5 columns = ? spots', ['25','27','30'], 0),
+  HQ('5 × 6 = 30 ✓', '5 + 6 = ?', ['10','11','12'], 1)],
+17: [
+  HQ('A king attacks the <b>8 squares around it</b>.', 'King in the middle: safe squares?', ['0','1','4'], 0),
+  HQ('<b>Split into cases</b>: white king in a corner, edge or middle.', 'Corners on 3 × 3?', ['4','2','8'], 0),
+  HQ('Corner king leaves <b>5</b> safe squares. Edge king leaves <b>3</b>.', '4 corners × 5 = ?', ['16','20','24'], 1),
+  HQ('Edges: 4 × 3 = 12.', '20 + 12 = ?', ['28','32','36'], 1)],
+18: [
+  HQ('Circle area = <b>π × r × r</b>. Ring = big − small.', 'Radius 3: area?', ['6π','9π','3π'], 1),
+  HQ('"Shaded = unshaded" means shaded is <b>half</b>.', 'Half of 9π?', ['4.5π','3π','9π'], 0),
+  HQ('Middle ring = 3π. Still need <b>1.5π</b> out of the outer ring’s 5π.', '1.5π out of 5π = ?', ['3/10','1/2','2/5'], 0),
+  HQ('The slice is that share of a full turn.', '[[3/10]] of 360° = ?', ['108°','120°','144°'], 0)],
+19: [
+  HQ('[[3/5]] of 15 = 15 ÷ 5 × 3.', '= ?', ['9','6','10'], 0),
+  HQ('To make red high-tops <b>few</b>, give high-tops to white first.', 'High-tops = ⅔ of 15 = ?', ['10','5','12'], 0),
+  HQ('Only 6 whites! 10 high-tops − 6 → the rest <b>must be red</b>.', '10 − 6 = ?', ['3','4','5'], 1),
+  HQ('4 red high-tops out of 15 pairs.', 'Fraction?', ['4/9','4/10','4/15'], 2)],
+20: [
+  HQ('<b>Equilateral</b> = all 3 sides equal.', 'A 3, 3, 3 triangle is…', ['equilateral','not equilateral'], 0),
+  HQ('Cube distances: <b>edge < face diagonal < body diagonal</b>.', 'Longest?', ['edge','face diagonal','body diagonal'], 2),
+  HQ('3 corners are a <b>face diagonal</b> from P — and from each other!', 'How many such corners?', ['2','3','4'], 1),
+  HQ('P + any 2 of those 3 corners.', 'Pairs from 3 things?', ['3','1','6'], 0)],
+21: [
+  HQ('3 : 1 means green is <b>3 of every 4</b> frogs.', 'Green share?', ['3/4','1/3','3/5'], 0),
+  HQ('The total <b>doesn’t change</b>. Track green.', 'Green: +5 − 3 = ?', ['2','8','−2'], 0),
+  HQ('Green’s share goes 3/4 → 4/5. That jump = <b>those 2 frogs</b>.', '[[4/5 − 3/4]] = ?', ['1/20','1/5','1/4'], 0),
+  HQ('All frogs = 40. Now 32 green, 8 yellow.', '32 − 8 = ?', ['20','24','32'], 1)],
+22: [
+  HQ('Ring area = <b>π × (R² − r²)</b>.', 'R = 2, r = 1: area?', ['π','3π','4π'], 1),
+  HQ('<b>Unroll it</b>: the tape becomes a long thin rectangle, same area.', 'Rectangle area = length × ?', ['thickness','radius'], 0),
+  HQ('Length = <b>area ÷ thickness</b>.', '3π ≈ ?', ['9.42','6.28','3.14'], 0),
+  HQ('9.42 ÷ 0.015 ≈ 628.', 'Nearest 100?', ['600','700','1200'], 0)],
+23: [
+  HQ('A line enters a <b>new cell</b> each time it crosses a grid line.', 'Cross 6 lines → cells?', ['6','7','5'], 1),
+  HQ('<b>Shrink it</b>: find a small piece that repeats.', '3000 across, 5000 up = 1000 copies of…', ['3 × 5','30 × 50','1 × 1'], 0),
+  HQ('In a 3 × 5 piece it crosses 2 + 4 = 6 lines (never through a corner inside).', 'Cells per piece?', ['6','7','8'], 1),
+  HQ('1000 pieces, 7 cells each.', '1000 × 7 = ?', ['6000','7000','8000'], 1)],
+24: [
+  HQ('90° peak, 45° sides: base = 2 × height, so <b>area = height × height</b>.', '8 ft mountain area?', ['32','64','128'], 1),
+  HQ('Total = A + B <b>− overlap</b>.', '64 + 144 = ?', ['183','208','200'], 1),
+  HQ('The overlap is a little <b>upside-down mountain</b>: area = h × h.', '208 − 183 = ?', ['15','25','35'], 1),
+  HQ('h × h = 25.', 'h = ?', ['5','25','12.5'], 0)],
+25: [
+  HQ('<b>Chance</b> = good ways ÷ all ways.', '2 red + 3 blue. Chance of red?', ['2/5','2/3','1/5'], 0),
+  HQ('Count the <b>bad</b> cases (easier), then take away.', 'A row with only its 2 end seats empty: bad?', ['Yes','No'], 0),
+  HQ('Bad with 1 empty seat in every row: 3 × 3 × 3 × 3.', '3⁴ = ?', ['12','64','81'], 2),
+  HQ('All bad = 81 + 108 + 6 = 195. Good = 495 − 195 = 300.', '[[300/495]] = ?', ['20/33','32/55','8/11'], 0)]
+});
+
+/* ===== solution-movie scripts =====
+   One list of actions per solution step. The 👆 finger performs each action on the widget.
+   'b:label'  press the button with this text      't:selector:i'  tap the i-th match ('*' = all)
+   's:i:v'    slide slider i to v                  'w:ms'  wait          'step'  run the widget's own step hook */
+const DEMOS = {2026:{}, 2025:{}, 2024:{}};
+const rep = (a, n) => Array(n).fill(a);
+
+/* 2026 */
+DEMOS[2026][1]  = [[], ['b:Cut','w:900'], ['t:.tap:0'], ['t:.tap:1','t:.tap:2','t:.tap:3']];
+DEMOS[2026][8]  = [['s:0:100'], ['s:0:50'], ['s:0:25','w:900','s:0:50']];
+DEMOS[2026][9]  = [['t:.nb.ready:0'], ['t:.nb.ready:1'], ['t:.nb.ready:0','w:400','t:.nb.ready:0'], ['t:.nb.ready:0','w:400','t:.nb.ready:0'], ['b:Simplify']];
+DEMOS[2026][12] = [[], ['step'], ['step'], ['step','t:.tap:3','t:.tap:3','t:.tap:4','t:.tap:4','t:.tap:4','t:.tap:5']];
+DEMOS[2026][13] = [['step'], ['step'], ['t:.tap:*'], []];
+DEMOS[2026][14] = [['s:1:10'], [], ['s:0:25'], []];
+DEMOS[2026][17] = [['step'], ['step'], ['step'],
+  ['step','t:[role=button]:0','t:[role=button]:2','t:[role=button]:1','t:[role=button]:2','t:[role=button]:2','t:[role=button]:3'],
+  ['step','t:[role=button]:0','t:[role=button]:3','t:[role=button]:1','t:[role=button]:2']];
+DEMOS[2026][18] = [['s:0:8'], ['s:0:2','w:700','s:0:3','w:500','s:0:4','w:500','s:0:5','w:500','s:0:6','w:500','s:0:7'], ['s:0:6','b:Level'], []];
+DEMOS[2026][19] = [['b:Throw','w:3800'], [], []];
+DEMOS[2026][20] = [
+  ['step','b:Clear', ...rep('b:+ Gold',8), 'b:Save'],
+  ['step','b:Clear','b:+ Silver', ...rep('b:+ Gold',5), 'b:Save', 'b:Clear','b:+ Gold','b:+ Silver', ...rep('b:+ Gold',4), 'b:Save'],
+  ['step','b:Clear','b:+ Silver','b:+ Silver','b:+ Gold','b:+ Gold','b:Save'],
+  ['step','b:Clear','b:+ Silver','b:+ Gold','b:+ Silver','b:+ Gold','b:Save'],
+  ['step','b:Clear','b:+ Silver','b:+ Silver','b:+ Silver']];
+DEMOS[2026][21] = [['step'], ['step'], ['step'], ['step'], ['step','w:1500','b:Run 1000']];
+DEMOS[2026][24] = [[], ['b:7'], ['b:14','b:21','b:28','b:35','b:42'], ['b:49']];
+DEMOS[2026][25] = [[], ['s:0:4','w:900','s:0:1'],
+  ['b:Save','s:2:3','b:Save','s:1:1','s:2:1','b:Save','s:2:2','b:Save'],
+  ['s:2:3','b:Save','s:2:4','b:Save','s:0:2','s:1:2','s:2:2','b:Save','s:2:3','b:Save']];
+
+/* 2025 */
+DEMOS[2025][6]  = [[], ['t:.tap:0'], ['t:.tap:2']];
+DEMOS[2025][22] = [['s:0:3'], ['s:0:4'], ['s:0:5','w:500','s:0:2'], ['s:0:1','w:400','s:0:8','w:400','s:0:11','w:400','s:0:17']];
+DEMOS[2025][21] = [[], [], ['b:Start'], [...rep('t:.tap:0',3), ...rep('t:.tap:1',5)], [...rep('t:.tap:4',4), ...rep('t:.tap:3',2), ...rep('t:.tap:6',6)]];
+
+/* 2024 */
+DEMOS[2024][2]  = [['t:.tap:0'], ['t:.tap:1'], ['t:.tap:2'], []];
+DEMOS[2024][4]  = [[], ['t:.tap:7'], ['t:.tap:8']];
+DEMOS[2024][5]  = [[], [], ['step'], ['b:sum 5','b:sum 9','b:sum 6']];
+DEMOS[2024][9]  = [['s:0:1'], ['s:0:3'], ['s:0:4']];
+DEMOS[2024][14] = [['t:.tap:1','t:.tap:2'], ['t:.tap:3'], ['t:.tap:4'], ['t:.tap:5','b:Best']];
+DEMOS[2024][21] = [['b:Move'], ['s:0:6','b:Move'], ['s:0:10','b:Move'], []];
+DEMOS[2024][23] = [[], ['s:0:2'], ['s:0:3'], []];
+DEMOS[2024][24] = [['b:Left'], ['b:Right'], ['b:Overlap'], []];
+
+/* ===== problem page: Problem → Hints → Play → Solution ===== */
+let INST = 0, DEMO = 0;
+
+/* mount one copy of a widget; several copies can share a page */
+function mountWidget(Y, n, box){
+  const wf = (Y.widgets||{})[n];
+  if (!wf){ box.append(h('div',{class:'hint'}, '🎨 Picture coming soon!')); return {}; }
+  let api;
+  try { api = wf(box, makeKit(box)) || {}; }
+  catch(e){ console.error('widget', n, e); box.append(h('div',{class:'hint'}, 'Picture failed to load.')); return {}; }
+  const tag = '_' + (++INST);
+  box.querySelectorAll('[id]').forEach(el=>{
+    const old = el.id, nu = old + tag; el.id = nu;
+    box.querySelectorAll('*').forEach(x=>{ for (const at of [...x.attributes]) if (at.value.includes('#'+old+')')) x.setAttribute(at.name, at.value.split('#'+old+')').join('#'+nu+')')); });
+  });
+  return api;
+}
+const safeStep = (api, i) => { if (api && api.step) try { return api.step(i); } catch(e){ console.error(e); } };
+const textLen = html => (html||'').replace(/<[^>]*>|\[\[|\]\]/g,'').length;
+function watchMut(el, fn, ms){
+  return new Promise(res=>{ let c = 0; const mo = new MutationObserver(m=>{ c += m.length; });
+    mo.observe(el,{subtree:true, childList:true, attributes:true, characterData:true});
+    fn(); setTimeout(()=>{ mo.disconnect(); res(c>0); }, ms); });
+}
+
+/* a tap-to-answer question; calls done(firstTry) when right */
+function askBlock(ask, onRight, onWrong){
+  const fb = h('div',{class:'fb'});
+  let missed = false, solved = false;
+  const opts = ask.o.map((o,j)=> h('button',{class:'opt', onclick:()=>{
+    if (solved) return;
+    if (j === ask.a){
+      solved = true; opts[j].classList.add('right');
+      fb.innerHTML = '✓ ' + (ask.yes || '') + ' <span class="soft">' + (missed ? G.pick(G.PRAISE_FIX) : G.pick(G.PRAISE_RIGHT)) + '</span>';
+      G.stepAnswer(true, !missed, opts[j]);
+      onRight(!missed);
+    } else {
+      if (!missed) onWrong();
+      missed = true; G.stepAnswer(false);
+      opts[j].classList.remove('wrong'); void opts[j].offsetWidth; opts[j].classList.add('wrong');
+      fb.innerHTML = (ask.no ? ask.no + ' ' : '') + '<span class="soft">' + G.pick(G.ENCOURAGE) + '</span>';
+    }
+  }}, o));
+  return h('div',{class:'ask'}, h('div',{class:'aq', html:ask.q}), h('div',{class:'opts'}, opts), fb);
+}
+
+function renderProblem(y, n){
+  const Y = YEARS[y], p = Y.probs[n-1]; const a = app(); a.innerHTML = '';
+  const key = y+'-'+n, last = Y.probs.length;
+  DEMO++;
+  let guess = null, slips = 0, gotIt = false, gotItBeforeSol = false, solWatched = false, finished = false;
+  const solvedBefore = G.starsOf(key) > 0;
+  a.append(h('div',{class:'pnav'},
+    h('button',{class:'pill', onclick:()=>location.hash='#/y/'+y}, `⌂ ${y}`),
+    h('span',{class:'sp'}),
+    h('button',{class:'pill', disabled: n===1?'':null, onclick:()=>location.hash=`#/y/${y}/p/${n-1}`}, '‹ Prev'),
+    h('button',{class:'pill', disabled: n===last?'':null, onclick:()=>location.hash=`#/y/${y}/p/${n+1}`}, 'Next ›')));
+  a.append(h('div',{class:'ptitle'}, h('span',{class:'big'}, String(n)),
+    h('div',{}, h('h2',{}, p.icon+' '+p.title), h('div',{class:'topic'}, `${y} · ` + p.topic + (solvedBefore ? ' · ' + starStr(G.starsOf(key)) : '')))));
+
+  /* ---- 1 · problem: pick → instant right / wrong ---- */
+  const note = h('div',{class:'note'}, solvedBefore ? 'Solved before! Try the memory check ↓' : 'Guess first! 🎯');
+  const chs = p.choices.map((c,i)=> h('button',{class:'choice', onclick:()=>{
+      if (gotIt || chs[i].classList.contains('wrong')) return;
+      if (guess === null) guess = i;
+      if (i === p.ans){
+        gotIt = true; if (!solWatched) gotItBeforeSol = true;
+        chs[i].classList.add('right');
+        note.innerHTML = guess === i ? '✓ Correct! 🎉' : '✓ That\'s it! 🎉';
+        if (!hintsDone() && !solWatched) note.innerHTML += ' Can you say WHY? Check the hints ↓';
+        note.className = 'note good';
+        checkFinish();
+      } else {
+        chs[i].classList.remove('wrong'); void chs[i].offsetWidth; chs[i].classList.add('wrong','shake');
+        note.innerHTML = '✗ Not this one. Try another — or open a hint ↓';
+        note.className = 'note bad';
+      }
+    }}, h('span',{class:'L'}, '('+LET[i]+')'), c));
+  const probCard = h('div',{class:'card'}, h('h3',{}, '📜 Problem'), h('div',{class:'q', html:p.q}), h('div',{class:'choices'}, chs), note);
+  a.append(probCard);
+
+  if (solvedBefore){ const tc = twinCard(y, n, G.reviewDue(key)); if (tc) a.append(tc); }
+
+  /* ---- 2 · hints: one idea at a time, each with a tiny check ---- */
+  const H = (p.hints && p.hints.length) ? p.hints : [{t:p.big}];
+  const hintsWrap = h('div',{class:'hints'});
+  const after = h('div',{class:'hafter hidden'}, '🎯 Now pick your answer! ',
+    h('button',{class:'btn o', onclick:()=>probCard.scrollIntoView({behavior:'smooth', block:'center'})}, '↑ Problem'));
+  a.append(h('div',{class:'card hintcard'}, h('h3',{}, '💡 Hints ', h('span',{class:'chip'}, '+10 XP each')), hintsWrap, after));
+  const trap = h('div',{class:'card trap hidden'}, h('h3',{}, '⚠️ Trap!'), h('p',{html:p.trap}));
+  const fin = h('div',{class:'card finale hidden'});
+  a.append(trap, fin);
+
+  const hs = H.map((hn,i)=>{
+    const head = h('button',{class:'hhead', onclick:()=>openHint(i)});
+    const body = h('div',{class:'hbody hidden'}, h('p',{html:hn.t}));
+    const el = h('div',{class:'hitem'}, head, body);
+    const item = {el, head, body, state:'', hn};
+    if (hn.ask) body.append(askBlock(hn.ask, ()=>doneHint(i), ()=>{ slips++; }));
+    else body.append(h('button',{class:'btn alt', onclick:e=>{ e.target.remove(); doneHint(i); }}, 'Got it ✓'));
+    hintsWrap.append(el);
+    return item;
+  });
+  function setState(i, st){
+    const it = hs[i]; it.state = st; it.el.className = 'hitem ' + st;
+    it.head.disabled = st === 'locked';
+    it.head.innerHTML = (st==='locked' ? '🔒 ' : st==='done' ? '✅ ' : '💡 ') + 'Hint #' + (i+1) + (st==='ready' ? ' <span class="tap">tap!</span>' : '');
+  }
+  hs.forEach((_,i)=>setState(i, i ? 'locked' : 'ready'));
+  function openHint(i){
+    if (hs[i].state !== 'ready') return;
+    setState(i, 'open'); hs[i].body.classList.remove('hidden'); hs[i].body.classList.add('fade-in');
+    G.interact();
+  }
+  function doneHint(i){
+    setState(i, 'done');
+    if (i+1 < hs.length){ setState(i+1, 'ready'); setTimeout(()=>hs[i+1].el.scrollIntoView({behavior:'smooth', block:'nearest'}), 60); }
+    else { if (!gotIt){ after.classList.remove('hidden'); after.classList.add('fade-in'); } checkFinish(); }
+  }
+  const hintsDone = () => hs.every(x=>x.state==='done');
+
+  /* ---- 3 · play with the picture ---- */
+  const playBox = h('div');
+  playBox.addEventListener('pointerdown', ()=>G.interact());
+  a.append(h('div',{class:'card play'}, h('h3',{}, '🎮 Play'), playBox));
+  safeStep(mountWidget(Y, n, playBox), 0);
+
+  /* ---- 4 · solution, played like a movie ---- */
+  const solBox = h('div',{class:'solpic hidden'});
+  const solList = h('ol',{class:'sollist'});
+  const solEnd = h('div',{class:'solend hidden'});
+  const finger = h('div',{class:'finger hidden'}, '👆');
+  let skip = false, running = false;
+  const solBtn = h('button',{class:'btn g big', onclick:()=>runDemo()}, '▶ Watch the solution');
+  const skipBtn = h('button',{class:'btn alt hidden', onclick:()=>{ skip = true; }}, '⏭ Next');
+  const solCard = h('div',{class:'card solution'}, h('h3',{}, '🎬 Solution'), h('div',{class:'ctrls'}, solBtn, skipBtn), solBox, solList, solEnd, finger);
+  a.append(solCard);
+
+  async function wait(ms, tok){ const t0 = Date.now(); while (Date.now()-t0 < ms && !skip && tok===DEMO) await sleep(80); skip = false; }
+  let lastTarget = null;
+  async function pointAt(c, tok){
+    const cr = solCard.getBoundingClientRect(), r = c.getBoundingClientRect();
+    const same = lastTarget === c; lastTarget = c;
+    finger.classList.remove('hidden');
+    finger.style.left = (r.left - cr.left + r.width/2 - 12) + 'px'; finger.style.top = (r.top - cr.top + r.height*0.55) + 'px';
+    await sleep(same ? 120 : 600); if (tok!==DEMO) return; finger.classList.add('tap'); await sleep(160); finger.classList.remove('tap');
+  }
+  /* one scripted action (see demos.js) */
+  async function act(a, api, i, tok){
+    const [kind, ...rest] = a.split(':');
+    if (kind==='w') return wait(+rest[0], tok);
+    if (kind==='step'){ const r = safeStep(api, i); if (r && r.then) await Promise.race([r, sleep(15000)]); return; }
+    if (kind==='b'){
+      const label = rest.join(':'), bs = [...solBox.querySelectorAll('button')];
+      const b = bs.find(x=>x.textContent.trim()===label) || bs.find(x=>x.textContent.includes(label));
+      if (!b) return;
+      await pointAt(b, tok); if (tok===DEMO && !b.disabled) b.click(); await sleep(220); return;
+    }
+    if (kind==='t'){
+      const idx = rest.pop(), sel = rest.join(':');
+      const els = [...solBox.querySelectorAll(sel)], list = idx==='*' ? els : [els[+idx]];
+      for (const el of list){ if (!el || tok!==DEMO) continue; await pointAt(el, tok); el.dispatchEvent(new MouseEvent('click',{bubbles:true})); await sleep(220); }
+      return;
+    }
+    if (kind==='s'){
+      const inp = solBox.querySelectorAll('input[type=range]')[+rest[0]]; if (!inp) return;
+      await pointAt(inp, tok);
+      const from = +inp.value, to = +rest[1], st = +inp.step || 1;
+      const nF = Math.min(12, Math.max(1, Math.round(Math.abs(to-from)/st)));
+      for (let j=1; j<=nF && tok===DEMO; j++){ inp.value = +(Math.round((from + (to-from)*j/nF)/st)*st).toFixed(6); inp.dispatchEvent(new Event('input')); await sleep(110); }
+      await sleep(200);
+    }
+  }
+  async function useCtrl(c, tok){
+    await pointAt(c, tok); if (tok!==DEMO) return;
+    if (!c.disabled) c.click();
+  }
+  async function runDemo(){
+    if (running) return; running = true;
+    const tok = ++DEMO;
+    solBtn.classList.add('hidden'); skipBtn.classList.remove('hidden'); solEnd.classList.add('hidden');
+    solBox.innerHTML = ''; solList.innerHTML = ''; solBox.classList.remove('hidden'); solBox.classList.add('demo');
+    const api = mountWidget(Y, n, solBox);
+    const ctrls = [...solBox.querySelectorAll('button')].filter(c=>!/reset|↺|clear|undo|again/i.test(c.textContent||''));
+    const script = (typeof DEMOS !== 'undefined' && DEMOS[y] && DEMOS[y][n]) || null;
+    lastTarget = null;
+    let ci = 0, lastBtn = null;
+    solCard.scrollIntoView({behavior:'smooth', block:'start'});
+    await sleep(500);
+    for (let i=0; i<p.steps.length; i++){
+      if (tok !== DEMO) return;
+      const st = p.steps[i];
+      const li = h('li',{class:'fade-in now'}, h('div',{html:st.t}));
+      [...solList.children].forEach(x=>x.classList.remove('now'));
+      solList.append(li);
+      await sleep(350);
+      if (script){ for (const ac of (script[i] || [])){ if (tok !== DEMO) return; await act(ac, api, i, tok); } }
+      else {
+        let ret;
+        const moved = await watchMut(solBox, ()=>{ ret = safeStep(api, i); }, 450);
+        if (ret && ret.then) await Promise.race([ret, sleep(15000)]);
+        if (!moved && tok===DEMO){
+          let c = ctrls[ci]; if (c){ ci++; lastBtn = c; } else c = lastBtn;
+          if (c) await useCtrl(c, tok);
+        }
+      }
+      if (st.ask){
+        const qa = h('div',{class:'solqa'}, h('span',{html:st.ask.q}), ' ', h('b',{class:'think'}, '🤔'));
+        li.append(qa);
+        await wait(1600, tok);
+        qa.lastChild.replaceWith(h('b',{class:'reveal', html:'→ '+st.ask.o[st.ask.a]}));
+      }
+      await wait(Math.min(6000, 1800 + textLen(st.t)*40), tok);
+    }
+    if (tok !== DEMO) return;
+    finger.classList.add('hidden'); solBox.classList.remove('demo');
+    [...solList.children].forEach(x=>x.classList.remove('now'));
+    solEnd.innerHTML = '';
+    solEnd.append(h('div',{class:'ans'}, `🏆 (${LET[p.ans]}) ${p.choices[p.ans]}`));
+    const row = h('div',{class:'ctrls', style:'justify-content:center'},
+      h('button',{class:'btn alt', onclick:()=>runDemo()}, '↺ Watch again'));
+    solEnd.append(row);
+    solEnd.classList.remove('hidden'); solEnd.classList.add('fade-in');
+    skipBtn.classList.add('hidden'); running = false;
+    solWatched = true;
+    checkFinish(true);
+    const tw = a.querySelector('.card.twin:not(.memcheck)');
+    if (tw && !tw.dataset.done) row.append(h('button',{class:'btn p', onclick:()=>tw.scrollIntoView({behavior:'smooth', block:'center'})}, '⚔️ Twin Challenge'));
+  }
+
+  /* ---- finish: right answer + (all hints OR solution watched) ---- */
+  function checkFinish(fromSolution){
+    if (finished) return;
+    if (!(solWatched || (gotIt && hintsDone()))) return;
+    finished = true;
+    trap.classList.remove('hidden'); trap.classList.add('fade-in');
+    chs.forEach((b,i)=>{ if (i===p.ans) b.classList.add('right'); });
+    const wrongs = gotItBeforeSol ? slips : Math.max(slips, 2);
+    const msg = guess===p.ans ? 'Your first guess was right! 🎯' : (gotItBeforeSol ? 'You worked it out! 💪' : 'Now you know why!');
+    const k = G.solve(key, guess===p.ans && !solvedBefore, wrongs, fin);
+    fin.innerHTML = '';
+    fin.append(h('h3',{style:'justify-content:center'}, '🏆 Answer'), h('div',{class:'ans'}, `(${LET[p.ans]}) ${p.choices[p.ans]}`),
+      h('div',{class:'bigstars'}, starStr(k)), h('div',{}, msg),
+      h('div',{class:'soft tip3', style:'margin-top:4px'}, k<3 ? 'Beat the Twin ↓ for ★★★' : 'Perfect! ★★★'));
+    if (n<last) fin.append(h('div',{class:'ctrls', style:'justify-content:center'}, h('button',{class:'btn g', onclick:()=>location.hash=`#/y/${y}/p/${n+1}`}, `Next ›`)));
+    fin.classList.remove('hidden'); fin.classList.add('fade-in');
+    after.classList.add('hidden');
+    confetti();
+    if (!solvedBefore){ const tc = twinCard(y, n, false); if (tc) fin.after(tc); }
+    if (!fromSolution) setTimeout(()=>fin.scrollIntoView({behavior:'smooth', block:'center'}), 80);
+  }
+
+  G.hud();
+  scrollTo(0,0);
+}
+
 /* ===== pages ===== */
 const app = () => document.getElementById('app');
 const LET = ['A','B','C','D','E'];
@@ -3394,7 +5825,7 @@ function reviewCard(years){
 function renderPicker(){
   const a = app(); a.innerHTML = '';
   const s = G.state;
-  a.append(h('div',{class:'hero'}, h('h1',{}, 'AMC 8 — Learn by Playing'), h('p',{}, 'Pick a year · Guess → Play → Climb → Win ★★★')));
+  a.append(h('div',{class:'hero'}, h('h1',{}, 'AMC 8 — Learn by Playing'), h('p',{}, 'Pick a year · Guess → Hints → Play → Watch → ★★★')));
   a.append(playerCard());
   const rc = reviewCard(yearList()); if (rc) a.append(rc);
   const g = h('div',{class:'years'});
@@ -3414,19 +5845,6 @@ function renderPicker(){
     shelf.append(h('div',{class:'badge'+(got?' got':''), title:desc}, h('div',{class:'bi'}, got?ic:'🔒'), h('div',{class:'bn'}, name), h('div',{class:'bd'}, desc)));
   });
   a.append(h('div',{class:'band'}, 'Trophy shelf'), shelf);
-  // for grown-ups
-  a.append(h('details',{class:'card science'},
-    h('summary',{}, '🔬 Why this works (for parents & teachers)'),
-    h('ul',{html:`
-      <li><b>Guess first</b> — predicting before learning primes attention, even when the guess is wrong (pretesting effect; Richland, Kornell &amp; Kao, 2009).</li>
-      <li><b>Tiny steps, each with a question</b> — answering beats re-reading (retrieval practice; Roediger &amp; Karpicke, 2006), and steps act as scaffolding that fades as you climb (Wood, Bruner &amp; Ross, 1976).</li>
-      <li><b>Instant, specific feedback</b> after every answer (Hattie &amp; Timperley, 2007).</li>
-      <li><b>Play with the picture</b> — manipulating a visual model links the idea to something concrete (dual coding; Paivio; Mayer's multimedia principles).</li>
-      <li><b>Twin Challenge</b> — same idea, new numbers, so the idea transfers instead of the answer being memorised (Gick &amp; Holyoak, 1983).</li>
-      <li><b>Memory checks on later days</b> — gaps grow 1 → 3 → 7 → 14 → 30 days after each success (and reset after a miss), because spaced, expanding retrieval beats cramming (spacing effect; Cepeda et al., 2006; Landauer &amp; Bjork, 1978).</li>
-      <li><b>Praise for effort and strategy</b>, never "you're smart" (Mueller &amp; Dweck, 1998). Fixing a mistake still earns XP.</li>
-      <li><b>XP, levels, a growing buddy, badges</b> — visible progress feeds competence and autonomy (Ryan &amp; Deci, 2000) and pulls kids toward the next goal (goal-gradient effect; Kivetz et al., 2006). Gamification helps learning when rewards track real learning (Sailer &amp; Homner, 2020 meta-analysis).</li>
-      <li><b>No loot boxes, no streak punishments, gentle brain breaks</b> — rewards are tied to mastery, not time, to avoid crowding out intrinsic interest (Deci, Koestner &amp; Ryan, 1999).</li>`})));
   G.hud();
   scrollTo(0,0);
 }
@@ -3435,7 +5853,7 @@ function renderHome(y){
   const a = app(); a.innerHTML = '';
   const Y = YEARS[y];
   a.append(h('div',{class:'pnav'}, h('button',{class:'pill', onclick:()=>location.hash='#/'}, '⌂ Years')));
-  a.append(h('div',{class:'hero'}, h('h1',{}, `AMC 8 · ${y}`), h('p',{}, 'Guess → Play → Climb → Win ★★★')));
+  a.append(h('div',{class:'hero'}, h('h1',{}, `AMC 8 · ${y}`), h('p',{}, 'Guess → Hints → Play → Watch → ★★★')));
   a.append(h('div',{class:'how'}, h('div',{}, '★ finish'), h('div',{}, '★★ 0–1 slips'), h('div',{}, '★★★ beat the Twin')));
   const rc = reviewCard([y]); if (rc) a.append(rc);
   const bands = [[1,8,'Warm-up (1–8)'],[9,16,'Thinking (9–16)'],[17,25,'Challenge (17–25)']];
@@ -3462,14 +5880,14 @@ function twinCard(y, n, isReview){
   if (!t) return null;
   let tries = 0, done = false;
   const fb = h('div',{class:'fb'});
-  const card = h('div',{class:'card twin fade-in'},
+  const card = h('div',{class:'card twin fade-in' + (isReview ? ' memcheck' : '')},
     h('h3',{}, isReview ? '🔁 Memory check' : '⚔️ Twin Challenge', h('span',{class:'chip'}, isReview ? '+30 XP' : '1st try = ★★★')),
     h('div',{class:'q', html:t.q}));
   const opts = t.o.map((o,j)=> h('button',{class:'choice', onclick:()=>{
     if (done) return;
     tries++;
     if (j === t.a){
-      done = true; opts[j].classList.add('right');
+      done = true; card.dataset.done = 1; opts[j].classList.add('right');
       fb.innerHTML = (tries===1 ? '🌟 First try! ' : '✓ Got it! ') + t.why;
       G.twin(key, tries===1, opts[j], isReview);
       document.querySelectorAll('.bigstars').forEach(e=>e.textContent = starStr(G.starsOf(key)));
@@ -3483,103 +5901,6 @@ function twinCard(y, n, isReview){
   }}, h('span',{class:'L'}, '('+LET[j]+')'), o));
   card.append(h('div',{class:'choices'}, opts), fb);
   return card;
-}
-
-function renderProblem(y, n){
-  const Y = YEARS[y], p = Y.probs[n-1]; const a = app(); a.innerHTML = '';
-  const key = y+'-'+n, last = Y.probs.length;
-  let guess = null, wrongs = 0;
-  const solvedBefore = G.starsOf(key) > 0;
-  a.append(h('div',{class:'pnav'},
-    h('button',{class:'pill', onclick:()=>location.hash='#/y/'+y}, `⌂ ${y}`),
-    h('span',{class:'sp'}),
-    h('button',{class:'pill', disabled: n===1?'':null, onclick:()=>location.hash=`#/y/${y}/p/${n-1}`}, '‹ Prev'),
-    h('button',{class:'pill', disabled: n===last?'':null, onclick:()=>location.hash=`#/y/${y}/p/${n+1}`}, 'Next ›')));
-  a.append(h('div',{class:'ptitle'}, h('span',{class:'big'}, String(n)),
-    h('div',{}, h('h2',{}, p.icon+' '+p.title), h('div',{class:'topic'}, `${y} · ` + p.topic + (solvedBefore ? ' · ' + starStr(G.starsOf(key)) : '')))));
-
-  // problem + guess
-  const note = h('div',{class:'note'}, solvedBefore ? 'Solved before! Try the memory check ↓' : 'Guess first! 🎯');
-  const chs = p.choices.map((c,i)=> h('button',{class:'choice', onclick:()=>{
-      if (a.dataset.finished) return;
-      guess = i; chs.forEach(b=>b.classList.remove('sel')); chs[i].classList.add('sel');
-      note.textContent = `Locked in (${LET[i]}). Let's check ↓`;
-    }}, h('span',{class:'L'}, '('+LET[i]+')'), c));
-  a.append(h('div',{class:'card'}, h('h3',{}, '📜 Problem'), h('div',{class:'q', html:p.q}), h('div',{class:'choices'}, chs), note));
-
-  // spaced review: test BEFORE re-study
-  if (solvedBefore){ const tc = twinCard(y, n, G.reviewDue(key)); if (tc) a.append(tc); }
-
-  a.append(h('div',{class:'card bigidea'}, h('h3',{}, '💡 Big idea'), h('p',{html:p.big})));
-
-  const box = h('div');
-  box.addEventListener('pointerdown', ()=>G.interact());
-  a.append(h('div',{class:'card play'}, h('h3',{}, '🎮 Play'), box));
-  let wapi = {};
-  const wf = (Y.widgets||{})[n];
-  try { wapi = (wf ? wf(box, makeKit(box)) : {}) || {}; if (!wf) box.append(h('div',{class:'hint'}, '🎨 Picture coming soon — use the steps below!')); } catch(e){ console.error('widget', n, e); box.append(h('div',{class:'hint'}, 'Widget failed to load.')); }
-
-  const stepsWrap = h('div',{class:'steps'});
-  a.append(h('div',{class:'card'}, h('h3',{}, '🪜 Steps ', h('span',{class:'chip'}, '+10 XP')), stepsWrap));
-  const trap = h('div',{class:'card trap hidden'}, h('h3',{}, '⚠️ Trap!'), h('p',{html:p.trap}));
-  const fin = h('div',{class:'card finale hidden'});
-  a.append(trap, fin);
-
-  const stepEls = p.steps.map((st,i)=>{
-    const el = h('div',{class:'step'+(i?' locked':'')}, h('p',{html:st.t}));
-    if (st.ask){
-      const fb = h('div',{class:'fb'});
-      let missed = false;
-      const opts = st.ask.o.map((o,j)=> h('button',{class:'opt', onclick:()=>{
-        if (el.classList.contains('done')) return;
-        if (j === st.ask.a){
-          opts[j].classList.add('right');
-          fb.innerHTML = '✓ ' + (st.ask.yes || '') + ' <span class="soft">' + (missed ? G.pick(G.PRAISE_FIX) : G.pick(G.PRAISE_RIGHT)) + '</span>';
-          G.stepAnswer(true, !missed, opts[j]);
-          finishStep(i);
-        } else {
-          if (!missed) wrongs++;
-          missed = true; G.stepAnswer(false);
-          opts[j].classList.remove('wrong'); void opts[j].offsetWidth; opts[j].classList.add('wrong');
-          fb.innerHTML = (st.ask.no ? st.ask.no + ' ' : '') + '<span class="soft">' + G.pick(G.ENCOURAGE) + '</span>';
-        }
-      }}, o));
-      el.append(h('div',{class:'ask'}, h('div',{class:'aq', html:st.ask.q}), h('div',{class:'opts'}, opts), fb));
-    } else {
-      const b = h('button',{class:'btn alt', style:'margin-top:4px', onclick:()=>{ b.remove(); finishStep(i); }}, 'Got it → next');
-      el.append(b);
-    }
-    stepsWrap.append(el);
-    return el;
-  });
-  function activate(i){
-    const el = stepEls[i]; el.classList.remove('locked'); el.classList.add('on','fade-in');
-    if (wapi.step) { try { wapi.step(i); } catch(e){ console.error(e); } }
-  }
-  function finishStep(i){
-    stepEls[i].classList.remove('on'); stepEls[i].classList.add('done');
-    if (i+1 < stepEls.length){ activate(i+1); setTimeout(()=>stepEls[i+1].scrollIntoView({behavior:'smooth',block:'nearest'}),50); }
-    else finale();
-  }
-  function finale(){
-    a.dataset.finished = 1;
-    trap.classList.remove('hidden'); trap.classList.add('fade-in');
-    chs.forEach((b,i)=>{ b.classList.remove('sel'); if (i===p.ans) b.classList.add('right'); else if (i===guess) b.classList.add('wrong'); });
-    const msg = guess===null ? 'You did it!' : (guess===p.ans ? 'Your guess was right! 🎯' : `You guessed (${LET[guess]}). Now you know why!`);
-    const k = G.solve(key, guess===p.ans && !solvedBefore, wrongs, fin);
-    fin.innerHTML = '';
-    fin.append(h('h3',{style:'justify-content:center'}, '🏆 Answer'), h('div',{class:'ans'}, `(${LET[p.ans]}) ${p.choices[p.ans]}`),
-      h('div',{class:'bigstars'}, starStr(k)), h('div',{}, msg),
-      h('div',{class:'soft tip3', style:'margin-top:4px'}, k<3 ? 'Beat the Twin ↓ for ★★★' : 'Perfect! ★★★'));
-    if (n<last) fin.append(h('div',{class:'ctrls', style:'justify-content:center'}, h('button',{class:'btn g', onclick:()=>location.hash=`#/y/${y}/p/${n+1}`}, `Next ›`)));
-    fin.classList.remove('hidden'); fin.classList.add('fade-in');
-    confetti();
-    if (!solvedBefore){ const tc = twinCard(y, n, false); if (tc) fin.after(tc); }
-    setTimeout(()=>fin.scrollIntoView({behavior:'smooth',block:'center'}),80);
-  }
-  activate(0);
-  G.hud();
-  scrollTo(0,0);
 }
 
 function route(){
