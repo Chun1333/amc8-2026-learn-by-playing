@@ -171,6 +171,11 @@ footer{color:var(--soft);font-size:13px;text-align:center;padding:24px 16px 40px
 .soft{color:var(--soft);font-weight:700;font-size:15px}
 @media (max-width:600px){ .xpbar{width:50px} .hud .st{display:none} .player{flex-direction:column;text-align:center} .bigpet{font-size:54px} }
 
+/* stacked fractions */
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;font-size:.82em;margin:0 .12em;text-align:center}
+.fr .nu{border-bottom:2px solid currentColor;padding:0 .18em 1px}
+.fr .de{padding:1px .18em 0}
+
 </style>
 </head>
 <body>
@@ -268,6 +273,52 @@ function confetti(){
   })();
 }
 
+
+
+/* ===== stacked fractions: every "a/b" or "½" in page text becomes a real fraction ===== */
+const FRAC_RE = /(\d+π|π|\d+)\/(\d+)|½/g;
+function fracEl(nu, de){
+  return h('span',{class:'fr'}, h('span',{class:'nu'}, nu), h('span',{class:'de'}, de));
+}
+function fracifyNode(root){
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(n){
+      const p = n.parentElement;
+      if (!p || p.closest('svg, .fr, script, style, textarea, input')) return NodeFilter.FILTER_REJECT;
+      FRAC_RE.lastIndex = 0;
+      return FRAC_RE.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }
+  });
+  const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(n=>{
+    const t = n.nodeValue, frag = document.createDocumentFragment();
+    let last = 0; FRAC_RE.lastIndex = 0; let m;
+    while ((m = FRAC_RE.exec(t))){
+      if (m.index > last) frag.append(t.slice(last, m.index));
+      frag.append(m[0]==='½' ? fracEl('1','2') : fracEl(m[1], m[2]));
+      last = m.index + m[0].length;
+    }
+    if (last < t.length) frag.append(t.slice(last));
+    n.replaceWith(frag);
+  });
+}
+new MutationObserver(muts=>{
+  for (const m of muts){
+    if (m.type === 'characterData') { if (m.target.parentNode) fracifyNode(m.target.parentNode); }
+    else m.addedNodes.forEach(n=>{ if (n.nodeType===1) fracifyNode(n); else if (n.nodeType===3 && n.parentNode) fracifyNode(n.parentNode); });
+  }
+}).observe(document.documentElement, {childList:true, subtree:true, characterData:true});
+
+/* SVG version: numerator over a line over denominator, centred at (x, y) */
+function svgFrac(parent, x, y, nu, de, fs=14, fill='#2B2340'){
+  const g = S('g',{},parent);
+  if (String(de) === '1'){ S('text',{x, y:y+fs*0.35, 'text-anchor':'middle','font-size':fs, fill, text:nu}, g); return g; }
+  const w = Math.max(String(nu).length, String(de).length)*fs*0.62 + 6;
+  S('text',{x, y:y-4, 'text-anchor':'middle','font-size':fs, fill, text:nu}, g);
+  S('line',{x1:x-w/2, x2:x+w/2, y1:y, y2:y, stroke:fill, 'stroke-width':1.8, 'stroke-linecap':'round'}, g);
+  S('text',{x, y:y+fs, 'text-anchor':'middle','font-size':fs, fill, text:de}, g);
+  return g;
+}
 
 /* ===== Game layer: XP, levels, pet, stars, badges, combos, spaced review =====
    Design rules (learning science):
@@ -1512,7 +1563,7 @@ W[19] = (box, k) => {
   S('text',{x:X0,y:170,'text-anchor':'middle','font-size':14,fill:'#6B6385',text:'entrance'},svg);
   S('text',{x:X1,y:112,'text-anchor':'middle','font-size':38,text:'🌳'},svg);
   S('text',{x:X1,y:170,'text-anchor':'middle','font-size':14,fill:'#6B6385',text:'tree'},svg);
-  for (let i=1;i<=2;i++){ S('line',{x1:X0+D*i/3,y1:140,x2:X0+D*i/3,y2:152,stroke:'#6B6385','stroke-width':2},svg); S('text',{x:X0+D*i/3,y:168,'text-anchor':'middle','font-size':13,fill:'#6B6385',text:i+'/3'},svg); }
+  for (let i=1;i<=2;i++){ S('line',{x1:X0+D*i/3,y1:140,x2:X0+D*i/3,y2:152,stroke:'#6B6385','stroke-width':2},svg); svgFrac(svg, X0+D*i/3, 172, i, 3, 13, '#6B6385'); }
   const trailL = S('polyline',{fill:'none',stroke:'#F59E0B','stroke-width':5,'stroke-linecap':'round',opacity:.8},svg);
   const trailM = S('line',{y1:200,y2:200,stroke:'#3B82F6','stroke-width':6,'stroke-linecap':'round'},svg);
   const ball = S('text',{x:X1-26,y:132,'font-size':18,text:'🎾'},svg);
@@ -1962,8 +2013,8 @@ W[21] = (box, k) => {
     S("circle",{cx:p.x,cy:p.y,r:25,fill:"transparent"},g);
     const dx = p.x-cx, dy = p.y-cy, dist = Math.hypot(dx,dy), ld = outer.has(id)?31:35;
     const lx = p.x + dx/dist*ld, ly = p.y + dy/dist*ld;
-    labelBGs[id] = S("rect",{x:lx-27,y:ly-12,width:54,height:25,rx:7,fill:"white",opacity:0,"pointer-events":"none"},svg);
-    labels[id] = S("text",{x:lx,y:ly+6,"text-anchor":"middle","font-size":17,"font-weight":800,fill:C.ink,"pointer-events":"none",text:""},svg);
+    labelBGs[id] = S("rect",{x:lx-24,y:ly-20,width:48,height:40,rx:8,fill:"white",opacity:0,"pointer-events":"none"},svg);
+    labels[id] = S("g",{"pointer-events":"none","data-x":lx,"data-y":ly},svg);
   });
   const spider = S("g",{"pointer-events":"none"},svg);
   S("circle",{cx:0,cy:0,r:16,fill:"white",stroke:C.ink,"stroke-width":2},spider);
@@ -1985,7 +2036,7 @@ W[21] = (box, k) => {
 
   function placeSpider(p){ setA(spider,{transform:`translate(${p.x},${p.y})`}); }
   function setBusy(v){ busy = v; walkBtn.disabled = runBtn.disabled = resetBtn.disabled = replayBtn.disabled = v; }
-  function updateCount(){ count.textContent = trials ? `${wins} / ${trials} = ${frac(wins,trials)} · ${(100*wins/trials).toFixed(1)}%` : "0 / 0"; }
+  function updateCount(){ count.innerHTML = trials ? `${wins} / ${trials} = ${frac(wins,trials)} · ${(100*wins/trials).toFixed(1)}%` : "0 / 0"; }
   function clearHighlights(){
     edges.forEach(e=>setA(e,{stroke:"#C4B5FD","stroke-width":5}));
     ids.forEach(id=>setA(nodeCircles[id],{"stroke-width":3,stroke:outer.has(id)?C.orange:C.purple}));
@@ -2049,7 +2100,7 @@ W[21] = (box, k) => {
   }
   function paintProbability(stage){
     const {weights, denominator} = distribution(stage);
-    ids.forEach(id=>{ labels[id].textContent = weights[id] ? frac(weights[id],denominator) : ""; setA(labelBGs[id],{opacity: weights[id] ? 0.95 : 0}); });
+    ids.forEach(id=>{ const L = labels[id]; L.replaceChildren(); if (weights[id]){ const [nu,de] = frac(weights[id],denominator).split("/"); svgFrac(L, +L.dataset.x, +L.dataset.y, nu, de||1, 15, C.ink); } setA(labelBGs[id],{opacity: weights[id] ? 0.95 : 0}); });
     const ow = [...outer].reduce((s,id)=>s+weights[id],0);
     k.say(demo,`After ${stage} ${stage===1?"move":"moves"} · Outer: ${ow ? frac(ow,denominator) : "0"}`);
   }
