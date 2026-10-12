@@ -1,6 +1,6 @@
-# AMC 8 · 2026 — Learn by Playing
+# AMC 8 — Learn by Playing
 
-An interactive, animated solution guide to all 25 problems of the 2026 AMC 8, built for primary-school students.
+An interactive, animated solution guide to AMC 8 problems — 2026 and 2025 so far (2024, 2023, 2022 coming) — built for primary-school students.
 
 **Play it here:** https://chun1333.github.io/amc8-2026-learn-by-playing/ — or open `index.html` in any browser (single self-contained page).
 
